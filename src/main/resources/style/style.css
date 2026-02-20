@@ -1,0 +1,56 @@
+/* Nascondo l'header delle tabelle */
+.table-view .column-header-background{
+    -fx-max-height: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    -fx-padding: 0;
+}
+
+/* Stili tabella di visualizzazione email */
+.table-view .table-row-cell:hover{
+    -fx-background-color: rgba(60, 165, 179, 0.81);
+    -fx-cursor: hand;
+}
+
+.table-view .table-row-cell:selected{
+    -fx-background-color: rgba(34, 129, 255, 0.93);
+}
+
+.table-view .table-row-cell:selected .label{
+    -fx-text-fill: white;
+}
+
+#colDelete{
+    -fx-alignment: center;
+}
+
+.btnDelete .ikonli-font-icon{
+    -fx-icon-color: red;
+}
+
+.btnDelete:hover .ikonli-font-icon{
+    -fx-icon-color: #b50000;
+}
+
+/* Stili buttons generici */
+.btn{
+    -fx-alignment: center;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+    -fx-background-insets: 0;
+    -fx-padding: 5;
+    -fx-background-radius: 15;
+    -fx-background-color: transparent; /* Niente sfondo */
+}
+
+.btn:hover{
+    -fx-background-color: rgb(181, 181, 181);
+}
+
+/* Stili view di Write email */
+.txtWrite{
+    -fx-background-radius: 15;
+    -fx-background-color: #d5d5d5;
+    -fx-border-color: transparent;
+}
+
