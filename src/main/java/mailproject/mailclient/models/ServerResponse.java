@@ -3,12 +3,17 @@ package mailproject.mailclient.models;
 public class ServerResponse {
 	private boolean success;
 	private String message;
+	private Object data;
 
-	public Boolean getSuccess() {
+	public Boolean isSuccess() {
 		return success;
 	}
 
 	public String getMessage() {
 		return message;
+	}
+
+	public Object getData() {
+		return data;
 	}
 }

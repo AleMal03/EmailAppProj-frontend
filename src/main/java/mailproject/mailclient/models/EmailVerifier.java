@@ -8,7 +8,6 @@ import java.net.Socket;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
-import java.util.function.Consumer;
 
 
 public class EmailVerifier implements Callable<Boolean> {
@@ -53,7 +52,7 @@ public class EmailVerifier implements Callable<Boolean> {
 		}
 
 		if(res != null){
-			return res.getSuccess();
+			return res.isSuccess();
 		}
 
 		throw new RuntimeException("Comunicazione col server fallita");
