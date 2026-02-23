@@ -12,6 +12,7 @@ import mailproject.mailclient.models.DataModel;
 import mailproject.mailclient.models.Email;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class InboxController extends MyController{
@@ -83,9 +84,9 @@ public class InboxController extends MyController{
 	@FXML
 	public void onReplyAllBtnClick(ActionEvent event){
 		Email replyEmail = model.getSelectedEmail();  // Email a cui si sta rispondendo
-		List<String> destinatari = model.getSelectedEmail().getDestinatari();   // Prendo TUTTI i destinatari
-		destinatari.remove(model.getCurrentUser());                 // Tolgo il current user
-		destinatari.add(model.getSelectedEmail().getMittente());    // Aggiungo il mittente
+		List<String> destinatari = new LinkedList<>(model.getSelectedEmail().getDestinatari());   // Prendo (copio) TUTTI i destinatari
+		destinatari.remove(model.getCurrentUser());                     // Tolgo il current user
+		destinatari.addFirst(model.getSelectedEmail().getMittente());    // Aggiungo il mittente (in testa, come primo destinatario)
 		String destinatariStr = String.join(", ", destinatari);
 
 		// Setting info

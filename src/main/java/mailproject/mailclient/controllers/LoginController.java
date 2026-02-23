@@ -2,24 +2,20 @@ package mailproject.mailclient.controllers;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Cursor;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-
-import java.io.IOException;
+import javafx.scene.layout.VBox;
 
 public class LoginController extends MyController{
 	private Parent inboxView;
 
-	@FXML
-	Button btnLogin;
-
-	@FXML
-	Label lblLoginError;
-
-	@FXML
-	TextField txtEmailAddr;
+	@FXML Button btnLogin;
+	@FXML Label lblLoginError;
+	@FXML TextField txtEmailAddr;
+	@FXML VBox boxLogin;
 
 	public void setInboxView(Parent inboxView) {
 		this.inboxView = inboxView;
@@ -27,17 +23,33 @@ public class LoginController extends MyController{
 
 	@FXML
 	protected void onLoginBtnClick(ActionEvent event) {
+		boxLogin.setCursor(Cursor.WAIT);
+		btnLogin.setDisable(true);
 		lblLoginError.setText("");
 
-		try{
-			model.createSession(txtEmailAddr.getText());
-			cambiaSchermata(inboxView, "Mail inbox", event);
-			txtEmailAddr.setText("");
-		}
-		catch(Exception e){
-			System.out.println(e.toString());
-			lblLoginError.setText(e.getMessage());
-		}
+		model.createSession(txtEmailAddr.getText(),
+			(success)->{
+				if(success){
+					cambiaSchermata(inboxView, "Mail inbox", event);
+					txtEmailAddr.setText("");
+				}
+				else{
+					lblLoginError.setText("Errore imprevisto");     // Non accadrà mai perché non ritorna mai false
+				}
+
+				// Reset GUI asincrono
+				btnLogin.setDisable(false);
+				boxLogin.setCursor(Cursor.DEFAULT);
+			},
+			(errorMsg)->{
+				System.err.println(errorMsg);   // Per debugging
+				lblLoginError.setText(errorMsg);
+
+				// Reset GUI asincrono
+				btnLogin.setDisable(false);
+				boxLogin.setCursor(Cursor.DEFAULT);
+			}
+		);
 	}
 
 	// todo verifica stato server

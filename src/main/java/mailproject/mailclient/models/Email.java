@@ -1,7 +1,6 @@
 package mailproject.mailclient.models;
 
 import javafx.beans.property.*;
-import javafx.collections.ObservableList;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,16 +11,16 @@ public class Email {
 	private final List<String> destinatari; // Lista dei destinatari (se molteplici) dell'email
 	private final String oggetto;           // Oggetto dell'email
 	private final String contenuto;         // Contenuto (testo) dell'email
-	private BooleanProperty letta;          // Indica se l'email è stata già letta o meno (per visualizzazione)
-	private final LocalDateTime dataRicezione;  // Timestamp ricezione email
+	private final BooleanProperty letta;          // Indica se l'email è stata già letta o meno (per visualizzazione)
+	private final LocalDateTime dataSpedizione;  // Timestamp spedizione email
 
-	public Email(long id, String contenuto, String oggetto, List<String> destinatari, String mittente, LocalDateTime dataRicezione, boolean letta) {
+	public Email(long id, String contenuto, String oggetto, List<String> destinatari, String mittente, LocalDateTime dataSpedizione, boolean letta) {
 		this.id = id;
 		this.contenuto = contenuto;
 		this.oggetto = oggetto;
 		this.destinatari = destinatari;
 		this.mittente = mittente;
-		this.dataRicezione = dataRicezione;
+		this.dataSpedizione = dataSpedizione;
 		this.letta = new SimpleBooleanProperty(letta);
 	}
 
@@ -57,8 +56,8 @@ public class Email {
 		return letta;
 	}
 
-	public LocalDateTime getDataRicezione() {
-		return dataRicezione;
+	public LocalDateTime getDataSpedizione() {
+		return dataSpedizione;
 	}
 
 	public String getDestinatariAsString() {
@@ -66,11 +65,11 @@ public class Email {
 	}
 
 	public String getDataRicezioneAsString(){
-		return dataRicezione.getDayOfMonth() + "/" +
-				dataRicezione.getMonthValue() + "/" +
-				dataRicezione.getYear() + " - " +
-				dataRicezione.getHour() + ":" +
-				dataRicezione.getMinute();
+		return dataSpedizione.getDayOfMonth() + "/" +
+				dataSpedizione.getMonthValue() + "/" +
+				dataSpedizione.getYear() + " - " +
+				dataSpedizione.getHour() + ":" +
+				dataSpedizione.getMinute();
 	}
 
 	public SimpleStringProperty anteprimaProperty(){
