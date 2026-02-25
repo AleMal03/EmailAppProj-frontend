@@ -10,6 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import mailproject.mailclient.model.DataModel;
 import mailproject.mailclient.model.beans.Email;
+import org.controlsfx.control.NotificationPane;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.LinkedList;
@@ -21,6 +22,7 @@ public class InboxController extends MyController{
 	// Elementi header
 	@FXML Label lblLoggedUsr;
 	@FXML Button btnLogout;
+	@FXML NotificationPane ntfyErrors;
 
 	// Elementi visualizzazione email in entrata
 	@FXML TableView<Email> tblEmails;

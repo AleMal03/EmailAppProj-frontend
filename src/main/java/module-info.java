@@ -5,6 +5,7 @@ module mailproject.mailclient {
 	requires org.kordamp.ikonli.javafx;
 	requires javafx.graphics;
 	requires com.google.gson;
+	requires org.controlsfx.controls;
 
 	opens mailproject.mailclient.controllers to javafx.fxml;
 	opens mailproject.mailclient.model to javafx.base;
