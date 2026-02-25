@@ -29,6 +29,8 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 public class DataModel {
+	private final String SERVER_IP = "127.0.0.1";
+	private final int SERVER_PORT = 5555;
 	private final SimpleStringProperty currentUser;     // Indirizzo email dell'utente loggato
 	private final SimpleListProperty<Email> inbox;      // Inbox: lista email in arrivo
 	private final SimpleObjectProperty<Email> selectedEmail;    // Email attualmente selezionata
@@ -89,6 +91,7 @@ public class DataModel {
 			}
 			catch(Exception e){
 				Platform.runLater(() -> onError.accept("Comunicazione col server fallita"));
+				e.printStackTrace();
 			}
 		});
 	}
@@ -122,8 +125,6 @@ public class DataModel {
 	 * @return true se l'email esiste nel server, false altrimenti.
 	 */
 	private boolean emailExists(String email){
-		final String serverIp = "127.0.0.1";
-		final int serverPort = 5000;
 		ServerRequest req = new ServerRequest(currentUser.get(), "VER_EML", email);
 		ServerResponse res = null;
 
@@ -131,7 +132,7 @@ public class DataModel {
 		Gson gson = new Gson();
 		String reqJson = gson.toJson(req);
 
-		try(Socket socket = new Socket(serverIp, serverPort);
+		try(Socket socket = new Socket(SERVER_IP, SERVER_PORT);
 		    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 		    Scanner in = new Scanner(socket.getInputStream());){
 
@@ -142,11 +143,17 @@ public class DataModel {
 			System.err.println(e.getMessage());
 		}
 		catch (JsonSyntaxException e){
+			e.printStackTrace();
 			throw new RuntimeException("Errore nella ricezione del messaggio Json " + e);
 		}
 
 		if(res != null){
-			return res.isSuccess();
+			if(res.isSuccess()){
+				return (Boolean) res.getData();
+			}
+			else{
+				throw new RuntimeException("Elaborazione del server fallita");
+			}
 		}
 
 		throw new RuntimeException("Comunicazione col server fallita");
@@ -179,7 +186,7 @@ public class DataModel {
 
 			// 2. RICHIESTA NUOVE EMAILS AL SERVER
 			final List<Email> newEmails =  new ArrayList<>();
-			try (Socket socket = new Socket("127.0.0.1", 5000);
+			try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
 			     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 			     Scanner in = new Scanner(new InputStreamReader(socket.getInputStream()));) {
 
