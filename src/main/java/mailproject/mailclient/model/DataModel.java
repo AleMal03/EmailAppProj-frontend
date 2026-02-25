@@ -39,7 +39,11 @@ public class DataModel {
 		currentUser = new SimpleStringProperty(null);
 		inbox = new SimpleListProperty<>(javafx.collections.FXCollections.observableArrayList());
 		selectedEmail = new SimpleObjectProperty<>(null);
-		exec = Executors.newFixedThreadPool(2); // Un thread per le operazioni in background e uno per le richieste al server
+		exec = Executors.newFixedThreadPool(2, r->{
+			Thread t = new Thread(r);
+			t.setDaemon(true);  // Setto i thread della pool come daemons
+			return t;
+		}); // Un thread per le operazioni in background e uno per le richieste al server
 		genericError = new SimpleStringProperty("");
 
 		// Listener current user per sincronizzazione inbox al login
