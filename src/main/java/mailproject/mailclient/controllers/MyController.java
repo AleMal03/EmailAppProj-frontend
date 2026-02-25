@@ -4,7 +4,7 @@ import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.stage.Stage;
-import mailproject.mailclient.models.DataModel;
+import mailproject.mailclient.model.DataModel;
 
 public class MyController {
 	protected DataModel model;

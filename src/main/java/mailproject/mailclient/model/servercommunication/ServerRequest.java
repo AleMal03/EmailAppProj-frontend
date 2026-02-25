@@ -1,4 +1,4 @@
-package mailproject.mailclient.models;
+package mailproject.mailclient.model.servercommunication;
 
 public class ServerRequest {
 	private String user;

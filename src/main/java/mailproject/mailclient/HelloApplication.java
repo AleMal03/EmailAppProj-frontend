@@ -7,7 +7,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import mailproject.mailclient.controllers.InboxController;
 import mailproject.mailclient.controllers.LoginController;
-import mailproject.mailclient.models.DataModel;
+import mailproject.mailclient.model.DataModel;
 
 import java.io.IOException;
 

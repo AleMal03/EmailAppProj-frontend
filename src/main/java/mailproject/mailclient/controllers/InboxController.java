@@ -8,8 +8,8 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-import mailproject.mailclient.models.DataModel;
-import mailproject.mailclient.models.Email;
+import mailproject.mailclient.model.DataModel;
+import mailproject.mailclient.model.beans.Email;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.LinkedList;

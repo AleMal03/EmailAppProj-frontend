@@ -1,4 +1,4 @@
-package mailproject.mailclient.models;
+package mailproject.mailclient.model.beans;
 
 import javafx.beans.property.*;
 
@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class Email {
-	private final long id;                  // Identificativo email
 	private final String mittente;          // Mittente dell'email
 	private final List<String> destinatari; // Lista dei destinatari (se molteplici) dell'email
 	private final String oggetto;           // Oggetto dell'email
@@ -14,18 +13,13 @@ public class Email {
 	private final BooleanProperty letta;          // Indica se l'email è stata già letta o meno (per visualizzazione)
 	private final LocalDateTime dataSpedizione;  // Timestamp spedizione email
 
-	public Email(long id, String contenuto, String oggetto, List<String> destinatari, String mittente, LocalDateTime dataSpedizione, boolean letta) {
-		this.id = id;
+	public Email(String contenuto, String oggetto, List<String> destinatari, String mittente, LocalDateTime dataSpedizione, boolean letta) {
 		this.contenuto = contenuto;
 		this.oggetto = oggetto;
 		this.destinatari = destinatari;
 		this.mittente = mittente;
 		this.dataSpedizione = dataSpedizione;
 		this.letta = new SimpleBooleanProperty(letta);
-	}
-
-	public long getId() {
-		return id;
 	}
 
 	public void setLetta(boolean letta) {

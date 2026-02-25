@@ -1,7 +1,9 @@
-package mailproject.mailclient.models;
+package mailproject.mailclient.model.beans;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import mailproject.mailclient.model.servercommunication.ServerRequest;
+import mailproject.mailclient.model.servercommunication.ServerResponse;
 
 import java.io.*;
 import java.net.Socket;

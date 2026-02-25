@@ -1,13 +1,20 @@
-package mailproject.mailclient.models;
+package mailproject.mailclient.model;
 
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import mailproject.mailclient.model.adapters.BooleanPropertyAdapter;
+import mailproject.mailclient.model.adapters.LocalDateTimeAdapter;
+import mailproject.mailclient.model.beans.Email;
+import mailproject.mailclient.model.beans.EmailVerifier;
 
+import java.io.FileWriter;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -24,13 +31,11 @@ public class DataModel {
 		selectedEmail = new SimpleObjectProperty<>(null);
 		exec = Executors.newSingleThreadExecutor();
 
-		// Init di prova
-		ArrayList<String> destinatari = new ArrayList<>();
-		destinatari.add("Ciao");
-
-		inbox.add(new Email(0, "Questa è la prova 1","Prova 1", destinatari, "io", LocalDateTime.now(), false));
-		inbox.add(new Email(1, "Questa è la prova 2, continua a provare no vabbe lol XD pazzesco","Prova 2", destinatari, "io", LocalDateTime.now(), false));
-		inbox.add(new Email(2, "Questa è la prova 3, saaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaas","Prova 3", destinatari, "io", LocalDateTime.now(), false));
+		// Listener current user per sincronizzazione inbox al login
+		currentUser.addListener((_, _, newValue) -> {
+			if(newValue != null)
+				syncInbox(newValue);
+		});
 	}
 
 	/**
@@ -119,4 +124,19 @@ public class DataModel {
 	public Email getSelectedEmail(){return selectedEmail.get();}
 
 	public SimpleObjectProperty<Email> selectedEmailProperty(){return selectedEmail;}
+
+	private void syncInbox(String emailAddr){
+		String user = emailAddr.split("@")[0];  // Estraggo user dall'indirizzo email
+		Gson gson = new GsonBuilder()
+				.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
+				.registerTypeAdapter(BooleanProperty.class, new BooleanPropertyAdapter())
+				.create();
+
+		try(FileWriter writer = new FileWriter("data/" + user + ".json")){
+			// todo richiesta al server
+		}
+		catch(Exception e){
+			throw new RuntimeException("Errore sincronizzazione inbox: " + e.getMessage());
+		}
+	}
 }
