@@ -37,10 +37,11 @@ public class HelloApplication extends Application {
 		inboxController.setLoginView(loginView);
 
 
-		Scene scene = new Scene(loginView, 1000, 500);
+		Scene scene = new Scene(loginView, 1100, 500);
 		scene.getStylesheets().add(HelloApplication.class.getResource("/style/style.css").toExternalForm());
 		stage.setTitle("Login");
 		stage.setScene(scene);
+		stage.setMinWidth(1100);
 		stage.show();
 	}
 }

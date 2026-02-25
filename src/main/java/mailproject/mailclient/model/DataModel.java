@@ -3,13 +3,9 @@ package mailproject.mailclient.model;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleListProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.*;
 import mailproject.mailclient.model.adapters.BooleanPropertyAdapter;
 import mailproject.mailclient.model.adapters.LocalDateTimeAdapter;
 import mailproject.mailclient.model.beans.Email;
@@ -18,14 +14,13 @@ import mailproject.mailclient.model.servercommunication.ServerResponse;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 public class DataModel {
@@ -34,24 +29,46 @@ public class DataModel {
 	private final SimpleStringProperty currentUser;     // Indirizzo email dell'utente loggato
 	private final SimpleListProperty<Email> inbox;      // Inbox: lista email in arrivo
 	private final SimpleObjectProperty<Email> selectedEmail;    // Email attualmente selezionata
-	private final ExecutorService exec;    // Esecutore per richieste al server come verifica dell'email o sync inbox
+	private final ExecutorService requestExec;          // Esecutore per richieste al server come verifica dell'email o sync inbox
+	private final ScheduledExecutorService connectionExec;       // Esecutore per verifica connessione periodica
 	private final SimpleStringProperty genericError;    // Contiene il messaggio di errore da visualizzare nella GUI
+	private ScheduledFuture<?> pollingTask;       // Polling task per la checkConnection periodica
+	private final BooleanProperty isConnectionOnline;
 
 	public DataModel() {
 		currentUser = new SimpleStringProperty(null);
 		inbox = new SimpleListProperty<>(javafx.collections.FXCollections.observableArrayList());
 		selectedEmail = new SimpleObjectProperty<>(null);
-		exec = Executors.newFixedThreadPool(2, r->{
+		genericError = new SimpleStringProperty("");
+		isConnectionOnline = new SimpleBooleanProperty(false);
+
+		// Init executors
+		requestExec = Executors.newFixedThreadPool(2, r->{// Un thread per le operazioni in background e uno per le richieste al server
 			Thread t = new Thread(r);
 			t.setDaemon(true);  // Setto i thread della pool come daemons
 			return t;
-		}); // Un thread per le operazioni in background e uno per le richieste al server
-		genericError = new SimpleStringProperty("");
+		});
+		connectionExec = Executors.newScheduledThreadPool(1, r->{
+			Thread t = new Thread(r);
+			t.setDaemon(true);  // Setto i thread della pool come daemons
+			return t;
+		});
 
-		// Listener current user per sincronizzazione inbox al login
+
+		// Listener current user per sincronizzazione inbox al login e per la verifica periodica della connessione
 		currentUser.addListener((_, _, newValue) -> {
-			if(newValue != null)
-				syncInbox(newValue, (errorMsg)-> genericError.set(errorMsg));
+			if(newValue != null) {
+				// Tento la sincronizzazione ogni 5 secondi
+				pollingTask = connectionExec.scheduleAtFixedRate(
+						() -> syncInbox(newValue, (errorMsg) -> genericError.set(errorMsg)),
+						0,
+						5,
+						TimeUnit.SECONDS);
+			}
+			else{
+				if(pollingTask != null)
+					pollingTask.cancel(true);   // Cancello il task per fermarlo
+			}
 		});
 	}
 
@@ -76,7 +93,7 @@ public class DataModel {
 		}
 
 		// Lavoro di Socket gestito dalla ThreadPool
-		exec.execute(() -> {
+		requestExec.execute(() -> {
 			try{
 				if(!emailExists(email)){
 					Platform.runLater(() -> onError.accept("L'indirizzo email inserito non esiste"));
@@ -84,14 +101,14 @@ public class DataModel {
 				else{
 					// Dopo che il Thread ha finito, rimando l'aggiornamento della GUI al MainThread
 					Platform.runLater(() -> {
-							currentUser.set(email);
+							currentUser.set(email.toLowerCase());
 							onSuccess.accept(true);
 					});
 				}
 			}
 			catch(Exception e){
 				Platform.runLater(() -> onError.accept("Comunicazione col server fallita"));
-				e.printStackTrace();
+				e.printStackTrace();    // Per debug
 			}
 		});
 	}
@@ -139,11 +156,7 @@ public class DataModel {
 			out.println(reqJson);
 			res = gson.fromJson(in.nextLine(),  ServerResponse.class);
 		}
-		catch (IOException | NoSuchElementException e){
-			System.err.println(e.getMessage());
-		}
-		catch (JsonSyntaxException e){
-			e.printStackTrace();
+		catch (Exception e){
 			throw new RuntimeException("Errore nella ricezione del messaggio Json " + e);
 		}
 
@@ -166,12 +179,11 @@ public class DataModel {
 				.registerTypeAdapter(BooleanProperty.class, new BooleanPropertyAdapter())
 				.create();
 
-
 		File localFile = new File("data/" + user + ".json");
 		Type tipoLista = new TypeToken<List<Email>>() {}.getType();  // Definisce e "cattura" il tipo esatto della Lista per non perdere informazioni
 
 		// Richiesta al server asincrona con thread
-		exec.execute(() -> {
+		requestExec.execute(() -> {
 			// 1. CARICAMENTO CACHE LOCALE
 			final List<Email> localEmails = new ArrayList<>();
 			if (localFile.exists()) {
@@ -199,17 +211,31 @@ public class DataModel {
 
 				// Aggiungo le email arrivate alle nuove email
 				if(res!=null && res.isSuccess()){
+					Platform.runLater(() -> {
+						genericError.set("");
+						isConnectionOnline.set(true);
+					});  // Reset error msg
+
 					newEmails.addAll(gson.fromJson(gson.toJson(res.getData()), tipoLista));   // Parsing doppio per non perdere dati
 					for (Email email : newEmails) {
 						email.setLetta(false);
 					}
 				}
-			} catch (Exception e) {
+			}
+			catch(ConnectException e){
+				Platform.runLater(() -> {
+					onError.accept("Connessione col server persa. Tentativo di riconessione... ");
+					isConnectionOnline.set(false);
+				});
+				return;
+			}
+			catch (Exception e) {
 				Platform.runLater(() -> onError.accept("Errore sincronizzazione inbox da server: " + e.getMessage()));
+				return;
 			}
 
-			// 3. MERGE E SORT DELLA INBOX
-			if (!localEmails.isEmpty() || !newEmails.isEmpty()) {
+			// 3. MERGE E SORT DELLA INBOX (solo se ci sono nuove email, o è il primo sync al login)
+			if (!newEmails.isEmpty() || (inbox.get().isEmpty() && !localEmails.isEmpty())) {
 				Platform.runLater(() -> {
 					// Resetto inbox
 					inbox.get().clear();
@@ -226,7 +252,9 @@ public class DataModel {
 			// 4. SALVATAGGIO NUOVA INBOX IN CACHE LOCALE (SE CI SONO STATE AGGIUNTE)
 			if(!newEmails.isEmpty()){
 				try (FileWriter writer = new FileWriter(localFile);) {
-					List<Email> emailsToWrite = new ArrayList<>(inbox.get());
+					List<Email> emailsToWrite = new ArrayList<>(localEmails);
+					emailsToWrite.addAll(newEmails);
+					emailsToWrite.sort((e1, e2) -> e2.getDataSpedizione().compareTo(e1.getDataSpedizione()));
 					gson.toJson(emailsToWrite, writer);
 				} catch (Exception e) {
 					Platform.runLater(() -> onError.accept("Errore scrittura inbox in cache locale: " + e.getMessage()));
@@ -258,5 +286,13 @@ public class DataModel {
 
 	public SimpleStringProperty genericErrorProperty() {
 		return genericError;
+	}
+
+	public boolean isIsConnectionOnline() {
+		return isConnectionOnline.get();
+	}
+
+	public BooleanProperty isConnectionOnlineProperty() {
+		return isConnectionOnline;
 	}
 }

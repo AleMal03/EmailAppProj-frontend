@@ -8,9 +8,10 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.RadialGradient;
+import javafx.scene.shape.Circle;
 import mailproject.mailclient.model.DataModel;
 import mailproject.mailclient.model.beans.Email;
-import org.controlsfx.control.NotificationPane;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.LinkedList;
@@ -22,7 +23,8 @@ public class InboxController extends MyController{
 	// Elementi header
 	@FXML Label lblLoggedUsr;
 	@FXML Button btnLogout;
-	@FXML NotificationPane ntfyErrors;
+	@FXML Label lblErrorMsg;
+	@FXML Circle ledConnectionStatus;
 
 	// Elementi visualizzazione email in entrata
 	@FXML TableView<Email> tblEmails;
@@ -150,6 +152,17 @@ public class InboxController extends MyController{
 		// Binding per visualizzare l'utente corrente
 		lblLoggedUsr.textProperty().bind(model.currentUserProperty());
 
+		// Binding colore led
+		ledConnectionStatus.fillProperty().bind(
+				Bindings.when(model.isConnectionOnlineProperty())
+						.then(RadialGradient.valueOf("focus-angle 0.0deg, focus-distance 0.0% , center 52.21238938053098% 47.348485570965394%, radius 100.0%, 0x4eff2fff 0.0%, 0xd5eb15b0 100.0%"))
+						.otherwise(RadialGradient.valueOf("focus-angle 0.0deg, focus-distance 0.0% , center 52.21238938053098% 47.348485570965394%, radius 100.0%, 0xff1515ff 0.0%, 0xeb7915bb 100.0%"))
+		);
+
+		// Binding per visualizzare messaggio di errore
+		lblErrorMsg.textProperty().bind(model.genericErrorProperty());
+		lblErrorMsg.visibleProperty().bind(model.genericErrorProperty().isNotEmpty());
+
 		// Bindings per visualizzare l'email aperta
 		boxSelectedEmail.visibleProperty().bind(model.selectedEmailProperty().isNotNull()); // Il pannello di DX si mostra solo se c'è un'email selezionata
 		lblFrom.textProperty().bind(Bindings.createStringBinding(
@@ -222,6 +235,7 @@ public class InboxController extends MyController{
 				lblTesto.textProperty().bind(itemProperty());
 
 				// Binding condizionale dello style per il grassetto
+				//todo Cambiare in list view e aggiustare bug
 				lblTesto.styleProperty().bind(
 						Bindings.when(emptyProperty().or(itemProperty().isNull()))
 								.then("")   // Se la cella è vuota, cancella qualunque stile
