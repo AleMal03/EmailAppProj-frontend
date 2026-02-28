@@ -1,12 +1,11 @@
 package mailproject.mailclient.controllers;
 
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.shape.Circle;
@@ -27,10 +26,7 @@ public class InboxController extends MyController{
 	@FXML Circle ledConnectionStatus;
 
 	// Elementi visualizzazione email in entrata
-	@FXML TableView<Email> tblEmails;
-	@FXML TableColumn<Email, String> colContent;
-	@FXML TableColumn<Email, String> colDate;
-	@FXML TableColumn<Email, Email> colDelete;
+	@FXML ListView<Email> lstEmails;
 	@FXML Label lblFrom;
 	@FXML Label lblTo;
 	@FXML Label lblSubject;
@@ -58,13 +54,13 @@ public class InboxController extends MyController{
 	@FXML
 	public void onLogoutBtnClick(ActionEvent event){
 		model.invalidateSession();
-		tblEmails.getSelectionModel().clearSelection();
+		lstEmails.getSelectionModel().clearSelection();
 		cambiaSchermata(loginView, "Login", event);
 	}
 
 	@FXML
 	public void onWriteEmailBtnClick(ActionEvent event){
-		tblEmails.getSelectionModel().clearSelection();
+		lstEmails.getSelectionModel().clearSelection();
 		boxWriteEmail.setVisible(true);
 		resetCampiWrite();
 	}
@@ -77,11 +73,11 @@ public class InboxController extends MyController{
 		txtWriteTo.setText(model.getSelectedEmail().getMittente());
 		txtWriteSubject.setText("Re: " + model.getSelectedEmail().getOggetto());
 		txtAreaWriteContent.setText("\n\n" +
-				"In data " + replyEmail.getDataRicezioneAsString() + " " + replyEmail.getMittente() + " ha scritto:\n\t" +
+				"In data " + replyEmail.getDataSpedizioneAsString() + " " + replyEmail.getMittente() + " ha scritto:\n\t" +
 				replyEmail.getContenuto());
 
 		// Cambio visualizzazione
-		tblEmails.getSelectionModel().clearSelection();
+		lstEmails.getSelectionModel().clearSelection();
 		boxWriteEmail.setVisible(true);
 	}
 
@@ -97,11 +93,11 @@ public class InboxController extends MyController{
 		txtWriteTo.setText(destinatariStr);
 		txtWriteSubject.setText("Re: " + model.getSelectedEmail().getOggetto());
 		txtAreaWriteContent.setText("\n\n" +
-				"In data " + replyEmail.getDataRicezioneAsString() + " " + replyEmail.getMittente() + " ha scritto:\n\t" +
+				"In data " + replyEmail.getDataSpedizioneAsString() + " " + replyEmail.getMittente() + " ha scritto:\n\t" +
 				replyEmail.getContenuto());
 
 		// Cambio visualizzazione
-		tblEmails.getSelectionModel().clearSelection();
+		lstEmails.getSelectionModel().clearSelection();
 		boxWriteEmail.setVisible(true);
 	}
 
@@ -114,14 +110,14 @@ public class InboxController extends MyController{
 		txtAreaWriteContent.setText("\n\n" +
 				"---------- Forwarded message ----------\n" +
 				"Da: " + emailToShare.getMittente() + "\n" +
-				"Data: " + emailToShare.getDataRicezioneAsString() + "\n" +
+				"Data: " + emailToShare.getDataSpedizioneAsString() + "\n" +
 				"Oggetto: " + emailToShare.getOggetto() + "\n" +
 				"A: " + emailToShare.getDestinatariAsString() + "\n\n" +
 				emailToShare.getContenuto());
 
 
 		// Cambio visualizzazione
-		tblEmails.getSelectionModel().clearSelection();
+		lstEmails.getSelectionModel().clearSelection();
 		boxWriteEmail.setVisible(true);
 	}
 
@@ -219,64 +215,42 @@ public class InboxController extends MyController{
 		);
 
 		/* Bindings per visualizzare la lista di emails */
-		tblEmails.itemsProperty().bind(model.inboxProperty());
-		// Colonna anteprima email
-		colContent.setCellValueFactory(email -> email.getValue().anteprimaProperty());    // Una colonna conterrà l'anteprima dell'email
-		colContent.setCellFactory(column -> new TableCell<>(){
-			// Creiamo una label dentro la cella per avere maggiore controllo su di essa
-			private final Label lblTesto = new Label();
+		lstEmails.itemsProperty().bind(model.inboxProperty());
+		lstEmails.setCellFactory(l -> new ListCell<>(){
 
-			{
-				// Diciamo alla cella di mostrare solo la label
-				setGraphic(lblTesto);
-				setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-
-				// Bindiamo il testo sulla label in base al contenuto della cella
-				lblTesto.textProperty().bind(itemProperty());
-
-				// Binding condizionale dello style per il grassetto
-				//todo Cambiare in list view e aggiustare bug
-				lblTesto.styleProperty().bind(
-						Bindings.when(emptyProperty().or(itemProperty().isNull()))
-								.then("")   // Se la cella è vuota, cancella qualunque stile
-								.otherwise(     // Altrimenti applica lo stile condizionale
-										// TableRow -> Email (item) -> letta
-										Bindings.when(Bindings.selectBoolean(tableRowProperty(), "item", "letta"))
-												.then("-fx-font-weight: normal;")
-												.otherwise("-fx-font-weight: bold;")
-								)
-				);
-			}
-		});
-		//Colonna data di ricezione
-		colDate.setCellValueFactory(email -> new ReadOnlyObjectWrapper<>(
-				email.getValue().getDataRicezioneAsString()));
-		// Colonna per il tasto delete
-		colDelete.setCellValueFactory(email -> new ReadOnlyObjectWrapper<>(email.getValue()));    // La colonna per l'eliminazione contiene l'intera email da eliminare
-		colDelete.setCellFactory(_ -> new TableCell<Email, Email>(){
+			// Contenuto riga della lista
+			private final Label anteprimaEmail = new Label();
+			private final Label dataInvio = new Label();
 			private final Button deleteButton = new Button();
+			private final HBox contentContainer = new HBox(anteprimaEmail, dataInvio, deleteButton);
 
 			{
 				deleteButton.getStyleClass().add("btnDelete");
-				deleteButton.getStyleClass().add("btn");
-				deleteButton.setGraphic(new FontIcon("far-trash-alt")); // Setta l'icona sul button
-
-				// AZIONE: modifica dei dati sul model
+				deleteButton.setGraphic(new FontIcon("far-trash-alt"));
+				// Azione: rimuove l'email corrente
 				deleteButton.setOnAction(event -> {
-					model.inboxProperty().remove(getItem());    // Elimina dalla lista del model l'Email presa dalla TableCell con getItem()
+					model.inboxProperty().get().remove(getItem());
 				});
+			}
 
-				// Visualizzazione condizionale del button (solo se la riga contiene un'email)
-				graphicProperty().bind(
-						Bindings.when(emptyProperty().or(itemProperty().isNull()))
-								.then((Node) null)
-								.otherwise(deleteButton)
-				);
+			// La view viene aggiornata con le modifiche del model.inbox
+			@Override
+			protected void updateItem(Email item, boolean empty){
+				super.updateItem(item, empty);
+
+				if(empty || item == null){
+					setGraphic(null);
+				}
+				else{
+					anteprimaEmail.setText(item.getAnteprima());
+					dataInvio.setText(item.getDataSpedizioneAsString());
+					setGraphic(contentContainer);
+				}
 			}
 		});
 
-		//Gestione selezione email dalla tabella
-		model.selectedEmailProperty().bind(tblEmails.getSelectionModel().selectedItemProperty());
+		//Gestione selezione email dalla lista
+		model.selectedEmailProperty().bind(lstEmails.getSelectionModel().selectedItemProperty());
 		model.selectedEmailProperty().addListener((_, _, newEmail) -> {
 			if (newEmail != null) {
 				boxWriteEmail.setVisible(false);

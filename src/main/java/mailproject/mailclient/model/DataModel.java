@@ -3,6 +3,7 @@ package mailproject.mailclient.model;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -108,7 +109,7 @@ public class DataModel {
 			}
 			catch(Exception e){
 				Platform.runLater(() -> onError.accept("Comunicazione col server fallita"));
-				e.printStackTrace();    // Per debug
+				e.printStackTrace();
 			}
 		});
 	}
@@ -155,6 +156,8 @@ public class DataModel {
 
 			out.println(reqJson);
 			res = gson.fromJson(in.nextLine(),  ServerResponse.class);
+		} catch (ConnectException e) {
+			throw new RuntimeException("Server offline: connessione rifiutata.");
 		}
 		catch (Exception e){
 			throw new RuntimeException("Errore nella ricezione del messaggio Json " + e);
@@ -169,14 +172,14 @@ public class DataModel {
 			}
 		}
 
-		throw new RuntimeException("Comunicazione col server fallita");
+		throw new RuntimeException("Comunicazione col server fallita.");
 	}
 
 	private void syncInbox(String emailAddr, Consumer<String> onError){
 		String user = emailAddr.split("@")[0];  // Estraggo user dall'indirizzo email
 		Gson gson = new GsonBuilder()
 				.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
-				.registerTypeAdapter(BooleanProperty.class, new BooleanPropertyAdapter())
+				.registerTypeHierarchyAdapter(BooleanProperty.class, new BooleanPropertyAdapter())
 				.create();
 
 		File localFile = new File("data/" + user + ".json");
@@ -193,6 +196,8 @@ public class DataModel {
 				}
 				catch (Exception e){
 					Platform.runLater(() -> onError.accept("Errore lettura cache locale inbox: " + e.getMessage()));
+					e.printStackTrace();
+
 				}
 			}
 
@@ -203,11 +208,18 @@ public class DataModel {
 			     Scanner in = new Scanner(new InputStreamReader(socket.getInputStream()));) {
 
 				// Invio richiesta
-				ServerRequest req = new ServerRequest(emailAddr, "SYN_INBX", null);
+				int lastId = 0;
+				for(Email email : localEmails){
+					if(email.getId() > lastId){
+						lastId =  email.getId();
+					}
+				}
+				ServerRequest req = new ServerRequest(emailAddr, "SYN_INBX", lastId);
 				out.println(gson.toJson(req, ServerRequest.class));
 
 				// Ricezione risposta
 				ServerResponse res = gson.fromJson(in.nextLine(), ServerResponse.class);
+
 
 				// Aggiungo le email arrivate alle nuove email
 				if(res!=null && res.isSuccess()){
@@ -216,6 +228,7 @@ public class DataModel {
 						isConnectionOnline.set(true);
 					});  // Reset error msg
 
+					System.out.println(res.toString());   // Debug
 					newEmails.addAll(gson.fromJson(gson.toJson(res.getData()), tipoLista));   // Parsing doppio per non perdere dati
 					for (Email email : newEmails) {
 						email.setLetta(false);
@@ -227,10 +240,14 @@ public class DataModel {
 					onError.accept("Connessione col server persa. Tentativo di riconessione... ");
 					isConnectionOnline.set(false);
 				});
+				e.printStackTrace();
+
 				return;
 			}
 			catch (Exception e) {
 				Platform.runLater(() -> onError.accept("Errore sincronizzazione inbox da server: " + e.getMessage()));
+				e.printStackTrace();
+
 				return;
 			}
 
@@ -251,15 +268,24 @@ public class DataModel {
 
 			// 4. SALVATAGGIO NUOVA INBOX IN CACHE LOCALE (SE CI SONO STATE AGGIUNTE)
 			if(!newEmails.isEmpty()){
+				Gson gsonPretty = new GsonBuilder()
+						.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
+						.registerTypeHierarchyAdapter(BooleanProperty.class, new BooleanPropertyAdapter())
+						.setPrettyPrinting()
+						.create();
 				try (FileWriter writer = new FileWriter(localFile);) {
 					List<Email> emailsToWrite = new ArrayList<>(localEmails);
 					emailsToWrite.addAll(newEmails);
 					emailsToWrite.sort((e1, e2) -> e2.getDataSpedizione().compareTo(e1.getDataSpedizione()));
-					gson.toJson(emailsToWrite, writer);
+					gsonPretty.toJson(emailsToWrite, writer);
 				} catch (Exception e) {
 					Platform.runLater(() -> onError.accept("Errore scrittura inbox in cache locale: " + e.getMessage()));
+					e.printStackTrace();
 				}
 			}
+
+			System.out.println(inboxProperty().get());   // Debug
+
 		});
 	}
 

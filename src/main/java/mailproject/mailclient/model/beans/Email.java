@@ -6,14 +6,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class Email {
+	private final int id;                   // Identificativo email
 	private final String mittente;          // Mittente dell'email
 	private final List<String> destinatari; // Lista dei destinatari (se molteplici) dell'email
 	private final String oggetto;           // Oggetto dell'email
 	private final String contenuto;         // Contenuto (testo) dell'email
-	private final BooleanProperty letta;          // Indica se l'email è stata già letta o meno (per visualizzazione)
+	private BooleanProperty letta;          // Indica se l'email è stata già letta o meno (per visualizzazione)
 	private final LocalDateTime dataSpedizione;  // Timestamp spedizione email
 
-	public Email(String contenuto, String oggetto, List<String> destinatari, String mittente, LocalDateTime dataSpedizione, boolean letta) {
+	public Email(int id, String contenuto, String oggetto, List<String> destinatari, String mittente, LocalDateTime dataSpedizione, boolean letta) {
+		this.id = id;
 		this.contenuto = contenuto;
 		this.oggetto = oggetto;
 		this.destinatari = destinatari;
@@ -22,8 +24,12 @@ public class Email {
 		this.letta = new SimpleBooleanProperty(letta);
 	}
 
+	public int getId() {
+		return id;
+	}
+
 	public void setLetta(boolean letta) {
-		this.letta.set(letta);
+		lettaProperty().set(letta);
 	}
 
 	public String getMittente() {
@@ -43,10 +49,13 @@ public class Email {
 	}
 
 	public boolean isLetta() {
-		return letta.get();
+		return lettaProperty().get();
 	}
 
 	public BooleanProperty lettaProperty() {
+		if (letta == null) {
+			letta = new SimpleBooleanProperty(false);
+		}
 		return letta;
 	}
 
@@ -58,7 +67,7 @@ public class Email {
 		return String.join(", ", getDestinatari());
 	}
 
-	public String getDataRicezioneAsString(){
+	public String getDataSpedizioneAsString(){
 		return dataSpedizione.getDayOfMonth() + "/" +
 				dataSpedizione.getMonthValue() + "/" +
 				dataSpedizione.getYear() + " - " +
@@ -66,12 +75,12 @@ public class Email {
 				dataSpedizione.getMinute();
 	}
 
-	public SimpleStringProperty anteprimaProperty(){
+	public String getAnteprima(){
 		String anteprima = oggetto + " - " + contenuto;
 
 		if (anteprima.length() > 50)
 			anteprima = anteprima.substring(0,50) + "...";
 
-		return new SimpleStringProperty(anteprima);
+		return anteprima;
 	}
 }

@@ -6,22 +6,27 @@
     -fx-padding: 0;
 }
 
-/* Stili tabella di visualizzazione email */
-.table-view .table-row-cell:hover{
+/* Stili lista di visualizzazione email */
+.list-view .list-cell:hover{
     -fx-background-color: rgba(60, 165, 179, 0.81);
     -fx-cursor: hand;
 }
 
-.table-view .table-row-cell:selected{
+.list-view .list-cell:selected{
     -fx-background-color: rgba(34, 129, 255, 0.93);
 }
 
-.table-view .table-row-cell:selected .label{
+.list-view .list-cell:selected .label{
     -fx-text-fill: white;
 }
 
 #colDelete{
     -fx-alignment: center;
+}
+
+/* Button elimina email */
+.btnDelete{
+    -fx-cursor: hand;
 }
 
 .btnDelete .ikonli-font-icon{
@@ -53,4 +58,11 @@
     -fx-background-color: #d5d5d5;
     -fx-border-color: transparent;
 }
+
+/* Rimuove lo spessore e il colore del divider in tutti gli SplitPane */
+/*.split-pane *.split-pane-divider {*/
+/*    -fx-padding: 0;*/
+/*    -fx-background-color: transparent;*/
+/*    -fx-background-insets: 0;*/
+/*}*/
 
