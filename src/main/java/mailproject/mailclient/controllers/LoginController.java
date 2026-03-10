@@ -51,7 +51,5 @@ public class LoginController extends MyController{
 			}
 		);
 	}
-
-	// todo verifica stato server
 }
 

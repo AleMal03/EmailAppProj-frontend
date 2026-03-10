@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class Email {
-	private final int id;                   // Identificativo email
+	private final long id;                   // Identificativo email
 	private final String mittente;          // Mittente dell'email
 	private final List<String> destinatari; // Lista dei destinatari (se molteplici) dell'email
 	private final String oggetto;           // Oggetto dell'email
@@ -14,17 +14,17 @@ public class Email {
 	private BooleanProperty letta;          // Indica se l'email è stata già letta o meno (per visualizzazione)
 	private final LocalDateTime dataSpedizione;  // Timestamp spedizione email
 
-	public Email(int id, String contenuto, String oggetto, List<String> destinatari, String mittente, LocalDateTime dataSpedizione, boolean letta) {
-		this.id = id;
+	public Email(String oggetto, String contenuto, String mittente, List<String> destinatari) {
+		this.id = -1;
 		this.contenuto = contenuto;
 		this.oggetto = oggetto;
 		this.destinatari = destinatari;
 		this.mittente = mittente;
-		this.dataSpedizione = dataSpedizione;
-		this.letta = new SimpleBooleanProperty(letta);
+		this.dataSpedizione = null;
+		this.letta = null;
 	}
 
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
@@ -37,7 +37,7 @@ public class Email {
 	}
 
 	public List<String> getDestinatari() {
-		return destinatari;
+		return List.copyOf(destinatari);
 	}
 
 	public String getOggetto() {
@@ -81,6 +81,6 @@ public class Email {
 		if (anteprima.length() > 50)
 			anteprima = anteprima.substring(0,50) + "...";
 
-		return anteprima;
+		return anteprima.replaceAll("\\R", " ");    // Elimino tutti gli "a capo" (\n, \r, \r\n)
 	}
 }

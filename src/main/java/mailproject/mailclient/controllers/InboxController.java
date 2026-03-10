@@ -1,5 +1,6 @@
 package mailproject.mailclient.controllers;
 
+import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -9,8 +10,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.shape.Circle;
+import javafx.util.Duration;
 import mailproject.mailclient.model.DataModel;
 import mailproject.mailclient.model.beans.Email;
+import mailproject.mailclient.model.beans.Notification;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.LinkedList;
@@ -19,10 +22,14 @@ import java.util.List;
 public class InboxController extends MyController{
 	private Parent loginView;
 
+	// Overlays
+	@FXML VBox boxInbox;
+	@FXML VBox notificationsOverlay;
+	@FXML VBox loadingOverlay;
+
 	// Elementi header
 	@FXML Label lblLoggedUsr;
 	@FXML Button btnLogout;
-	@FXML Label lblErrorMsg;
 	@FXML Circle ledConnectionStatus;
 
 	// Elementi visualizzazione email in entrata
@@ -59,14 +66,16 @@ public class InboxController extends MyController{
 	}
 
 	@FXML
-	public void onWriteEmailBtnClick(ActionEvent event){
+	public void onWriteEmailBtnClick(){
+		resetCampiWrite();  // Reset view
 		lstEmails.getSelectionModel().clearSelection();
 		boxWriteEmail.setVisible(true);
-		resetCampiWrite();
 	}
 
 	@FXML
-	public void onReplyBtnClick(ActionEvent event){
+	public void onReplyBtnClick(){
+		resetCampiWrite();  // Reset view
+
 		Email replyEmail = model.getSelectedEmail();  // Email a cui si sta rispondendo
 
 		// Setting info
@@ -82,16 +91,18 @@ public class InboxController extends MyController{
 	}
 
 	@FXML
-	public void onReplyAllBtnClick(ActionEvent event){
+	public void onReplyAllBtnClick(){
+		resetCampiWrite();  // Reset view
+
 		Email replyEmail = model.getSelectedEmail();  // Email a cui si sta rispondendo
-		List<String> destinatari = new LinkedList<>(model.getSelectedEmail().getDestinatari());   // Prendo (copio) TUTTI i destinatari
-		destinatari.remove(model.getCurrentUser());                     // Tolgo il current user
-		destinatari.addFirst(model.getSelectedEmail().getMittente());    // Aggiungo il mittente (in testa, come primo destinatario)
+		List<String> destinatari = new LinkedList<>(replyEmail.getDestinatari());   // Prendo (copio) TUTTI i destinatari
+		destinatari.remove(model.getCurrentUser());        // Tolgo il current user
+		destinatari.addFirst(replyEmail.getMittente());    // Aggiungo il mittente (in testa, come primo destinatario)
 		String destinatariStr = String.join(", ", destinatari);
 
 		// Setting info
 		txtWriteTo.setText(destinatariStr);
-		txtWriteSubject.setText("Re: " + model.getSelectedEmail().getOggetto());
+		txtWriteSubject.setText("Re: " + replyEmail.getOggetto());
 		txtAreaWriteContent.setText("\n\n" +
 				"In data " + replyEmail.getDataSpedizioneAsString() + " " + replyEmail.getMittente() + " ha scritto:\n\t" +
 				replyEmail.getContenuto());
@@ -102,7 +113,9 @@ public class InboxController extends MyController{
 	}
 
 	@FXML
-	public void onShareBtnClick(ActionEvent event){
+	public void onShareBtnClick(){
+		resetCampiWrite();  // Reset view
+
 		Email emailToShare = model.getSelectedEmail();  // Email da condividere
 
 		//Setting info
@@ -122,22 +135,47 @@ public class InboxController extends MyController{
 	}
 
 	@FXML
-	public void onDeleteBtnClick(ActionEvent event){
-		model.inboxProperty().remove(model.getSelectedEmail());
+	public void onDeleteBtnClick(){
+		deleteEmail(model.getSelectedEmail());
 	}
 
 	@FXML
-	public void onWriteSubmit(ActionEvent event){
-		boxWriteEmail.setVisible(false);
-		//todo invio email
-		//todo verifica sintassi indirizzi email inseriti
-		resetCampiWrite();
+	public void onWriteSubmit(){
+		// Verifico prima che l'utente abbia inserito almeno un mittente
+		if(txtWriteTo.getText().isEmpty()){
+			model.notificaUtenteProperty().setValue(new Notification(Notification.NotificationType.INFO,
+					"Il campo destinatari è vuoto"));
+			return;
+		}
+
+		model.sendEmail(new Email(
+				txtWriteSubject.getText(),
+				txtAreaWriteContent.getText(),
+				txtWriteFrom.getText(),
+				List.of(txtWriteTo.getText().split("\\s*,\\s*"))    // Split ignorando gli spazi
+			),
+			destinatariInesistenti -> {
+				new Alert(Alert.AlertType.ERROR,
+					"I seguenti indirizzi inseriti non esistono: " +
+						String.join(", ", destinatariInesistenti) +
+						".\nSi prega di verificare e riprovare."
+				).showAndWait();
+			},
+			_ -> {
+				resetCampiWrite();
+				boxWriteEmail.setVisible(false);
+			}
+		);
 	}
 
 	@FXML
-	public void onWriteCanc(ActionEvent event){
+	public void onWriteCanc(){
 		boxWriteEmail.setVisible(false);
 		resetCampiWrite();
+	}
+
+	private void deleteEmail(Email toDelete){
+		model.deleteEmail(toDelete);
 	}
 
 
@@ -145,6 +183,9 @@ public class InboxController extends MyController{
 	 * Setta tutti i bindings necessari alla view.
 	 */
 	private void setBindings(){
+		// Binding overlay caricamenti
+		loadingOverlay.visibleProperty().bind(model.isLoadingProperty());
+
 		// Binding per visualizzare l'utente corrente
 		lblLoggedUsr.textProperty().bind(model.currentUserProperty());
 
@@ -155,9 +196,13 @@ public class InboxController extends MyController{
 						.otherwise(RadialGradient.valueOf("focus-angle 0.0deg, focus-distance 0.0% , center 52.21238938053098% 47.348485570965394%, radius 100.0%, 0xff1515ff 0.0%, 0xeb7915bb 100.0%"))
 		);
 
-		// Binding per visualizzare messaggio di errore
-		lblErrorMsg.textProperty().bind(model.genericErrorProperty());
-		lblErrorMsg.visibleProperty().bind(model.genericErrorProperty().isNotEmpty());
+		// Listener per visualizzare messaggi di errore sull'overlay man mano che si presentano
+		model.notificaUtenteProperty().addListener((_, _, newValue) -> {
+			if(newValue != null) {
+				addNotificationToOverlay(newValue);
+				model.notificaUtenteProperty().set(null);   // Reset notifica
+			}
+		});
 
 		// Bindings per visualizzare l'email aperta
 		boxSelectedEmail.visibleProperty().bind(model.selectedEmailProperty().isNotNull()); // Il pannello di DX si mostra solo se c'è un'email selezionata
@@ -228,9 +273,7 @@ public class InboxController extends MyController{
 				deleteButton.getStyleClass().add("btnDelete");
 				deleteButton.setGraphic(new FontIcon("far-trash-alt"));
 				// Azione: rimuove l'email corrente
-				deleteButton.setOnAction(event -> {
-					model.inboxProperty().get().remove(getItem());
-				});
+				deleteButton.setOnAction(_ -> deleteEmail(getItem()));
 			}
 
 			// La view viene aggiornata con le modifiche del model.inbox
@@ -269,6 +312,30 @@ public class InboxController extends MyController{
 		txtWriteTo.setText("");
 		txtWriteSubject.setText("");
 		txtAreaWriteContent.setText("");
+	}
+
+	/**
+	 * Permette stackare nuove notifiche nell'apposito overlay della GUI quando si presentano.
+	 *
+	 * @param notification Notifica da far comparire.
+	 */
+	private void addNotificationToOverlay(Notification notification) {
+		Label lblNotification = new Label(notification.getMessage());
+		String cssClass = switch (notification.getType()) {
+			case ERROR -> "lblError";
+			case INFO -> "lblInfo";
+			case SUCCESS -> "lblSuccess";
+		};
+
+		lblNotification.getStyleClass().add("lblNotification");     // Stile CSS
+		lblNotification.getStyleClass().add(cssClass);              // Stile CSS
+
+		notificationsOverlay.getChildren().add(lblNotification);  // Aggiungo la label al VBox in sovra impressione
+
+		// Imposto un timer di 4 secondi per farla sparire e liberare lo spazio
+		PauseTransition delay = new PauseTransition(Duration.seconds(4));
+		delay.setOnFinished(_ -> notificationsOverlay.getChildren().remove(lblNotification));
+		delay.play();
 	}
 }
 

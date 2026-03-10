@@ -3,16 +3,17 @@ package mailproject.mailclient.model;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import mailproject.mailclient.model.adapters.BooleanPropertyAdapter;
 import mailproject.mailclient.model.adapters.LocalDateTimeAdapter;
 import mailproject.mailclient.model.beans.Email;
+import mailproject.mailclient.model.beans.Notification;
 import mailproject.mailclient.model.servercommunication.ServerRequest;
 import mailproject.mailclient.model.servercommunication.ServerResponse;
 
+import javax.lang.model.type.NullType;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.net.ConnectException;
@@ -27,21 +28,25 @@ import java.util.function.Consumer;
 public class DataModel {
 	private final String SERVER_IP = "127.0.0.1";
 	private final int SERVER_PORT = 5555;
+	private boolean justLogged; // Indica se l'utente si è appena loggato (flag per la visualizzazione delle notifiche)
 	private final SimpleStringProperty currentUser;     // Indirizzo email dell'utente loggato
 	private final SimpleListProperty<Email> inbox;      // Inbox: lista email in arrivo
 	private final SimpleObjectProperty<Email> selectedEmail;    // Email attualmente selezionata
-	private final ExecutorService requestExec;          // Esecutore per richieste al server come verifica dell'email o sync inbox
-	private final ScheduledExecutorService connectionExec;       // Esecutore per verifica connessione periodica
-	private final SimpleStringProperty genericError;    // Contiene il messaggio di errore da visualizzare nella GUI
-	private ScheduledFuture<?> pollingTask;       // Polling task per la checkConnection periodica
-	private final BooleanProperty isConnectionOnline;
+	private final ExecutorService requestExec;                  // Esecutore per richieste al server come verifica dell'email o sync inbox
+	private final ScheduledExecutorService connectionExec;      // Esecutore per verifica connessione periodica
+	private final SimpleObjectProperty<Notification> notificaUtente;    // Contiene il messaggio di errore da visualizzare nella GUI
+	private ScheduledFuture<?> pollingTask;             // Polling task per la checkConnection periodica
+	private final BooleanProperty isConnectionOnline;   // Stato connessione col server
+	private final BooleanProperty isLoading;            // Stato di caricamento
 
 	public DataModel() {
 		currentUser = new SimpleStringProperty(null);
 		inbox = new SimpleListProperty<>(javafx.collections.FXCollections.observableArrayList());
 		selectedEmail = new SimpleObjectProperty<>(null);
-		genericError = new SimpleStringProperty("");
+		notificaUtente = new SimpleObjectProperty<>(null);
 		isConnectionOnline = new SimpleBooleanProperty(false);
+		isLoading = new SimpleBooleanProperty(false);
+		justLogged = false;
 
 		// Init executors
 		requestExec = Executors.newFixedThreadPool(2, r->{// Un thread per le operazioni in background e uno per le richieste al server
@@ -61,7 +66,7 @@ public class DataModel {
 			if(newValue != null) {
 				// Tento la sincronizzazione ogni 5 secondi
 				pollingTask = connectionExec.scheduleAtFixedRate(
-						() -> syncInbox(newValue, (errorMsg) -> genericError.set(errorMsg)),
+						() -> syncInbox(newValue),
 						0,
 						5,
 						TimeUnit.SECONDS);
@@ -69,6 +74,17 @@ public class DataModel {
 			else{
 				if(pollingTask != null)
 					pollingTask.cancel(true);   // Cancello il task per fermarlo
+			}
+		});
+
+
+		// Listener status connessione per notifica personalizzata
+		isConnectionOnline.addListener((_, oldValue, newValue) -> {
+			if(oldValue == false && newValue == true){  // Se mi sono appena riconnesso al server, invio la notifica relativa
+				if(!justLogged)
+					notificaUtente.set(new Notification(Notification.NotificationType.INFO, "Connessione al server ristabilita."));
+				else
+					justLogged = false;
 			}
 		});
 	}
@@ -102,6 +118,7 @@ public class DataModel {
 				else{
 					// Dopo che il Thread ha finito, rimando l'aggiornamento della GUI al MainThread
 					Platform.runLater(() -> {
+							justLogged = true;
 							currentUser.set(email.toLowerCase());
 							onSuccess.accept(true);
 					});
@@ -109,7 +126,6 @@ public class DataModel {
 			}
 			catch(Exception e){
 				Platform.runLater(() -> onError.accept("Comunicazione col server fallita"));
-				e.printStackTrace();
 			}
 		});
 	}
@@ -119,6 +135,7 @@ public class DataModel {
 	 */
 	public void invalidateSession(){
 		currentUser.set(null);
+		isConnectionOnline.set(false);
 	}
 
 	/**
@@ -143,8 +160,8 @@ public class DataModel {
 	 * @return true se l'email esiste nel server, false altrimenti.
 	 */
 	private boolean emailExists(String email){
-		ServerRequest req = new ServerRequest(currentUser.get(), "VER_EML", email);
-		ServerResponse res = null;
+		ServerRequest req = new ServerRequest(currentUser.get(), "EML_XST", email);
+		ServerResponse res;
 
 		// Serializzo la richiesta in JSON
 		Gson gson = new Gson();
@@ -152,7 +169,7 @@ public class DataModel {
 
 		try(Socket socket = new Socket(SERVER_IP, SERVER_PORT);
 		    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-		    Scanner in = new Scanner(socket.getInputStream());){
+		    Scanner in = new Scanner(socket.getInputStream())){
 
 			out.println(reqJson);
 			res = gson.fromJson(in.nextLine(),  ServerResponse.class);
@@ -175,7 +192,12 @@ public class DataModel {
 		throw new RuntimeException("Comunicazione col server fallita.");
 	}
 
-	private void syncInbox(String emailAddr, Consumer<String> onError){
+	/**
+	 * Sincronizza la inbox chiedendo i nuovi messaggi dal server.
+	 *
+	 * @param emailAddr Indirizzo email del currentUser.
+	 */
+	private void syncInbox(String emailAddr){
 		String user = emailAddr.split("@")[0];  // Estraggo user dall'indirizzo email
 		Gson gson = new GsonBuilder()
 				.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
@@ -195,9 +217,8 @@ public class DataModel {
 					if (cacheEmails != null) localEmails.addAll(cacheEmails);
 				}
 				catch (Exception e){
-					Platform.runLater(() -> onError.accept("Errore lettura cache locale inbox: " + e.getMessage()));
-					e.printStackTrace();
-
+					Platform.runLater(() -> notificaUtente.set(new Notification(Notification.NotificationType.ERROR,
+							"Errore lettura cache locale inbox: " + e.getMessage())));
 				}
 			}
 
@@ -205,10 +226,10 @@ public class DataModel {
 			final List<Email> newEmails =  new ArrayList<>();
 			try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
 			     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-			     Scanner in = new Scanner(new InputStreamReader(socket.getInputStream()));) {
+			     Scanner in = new Scanner(new InputStreamReader(socket.getInputStream()))) {
 
 				// Invio richiesta
-				int lastId = 0;
+				long lastId = 0;
 				for(Email email : localEmails){
 					if(email.getId() > lastId){
 						lastId =  email.getId();
@@ -223,12 +244,8 @@ public class DataModel {
 
 				// Aggiungo le email arrivate alle nuove email
 				if(res!=null && res.isSuccess()){
-					Platform.runLater(() -> {
-						genericError.set("");
-						isConnectionOnline.set(true);
-					});  // Reset error msg
+					Platform.runLater(() -> isConnectionOnline.set(true));  // Reset error msg
 
-					System.out.println(res.toString());   // Debug
 					newEmails.addAll(gson.fromJson(gson.toJson(res.getData()), tipoLista));   // Parsing doppio per non perdere dati
 					for (Email email : newEmails) {
 						email.setLetta(false);
@@ -237,17 +254,15 @@ public class DataModel {
 			}
 			catch(ConnectException e){
 				Platform.runLater(() -> {
-					onError.accept("Connessione col server persa. Tentativo di riconessione... ");
+					notificaUtente.set(new Notification(Notification.NotificationType.ERROR,
+							"Connessione col server persa. Tentativo di riconessione... "));
 					isConnectionOnline.set(false);
 				});
-				e.printStackTrace();
 
-				return;
 			}
 			catch (Exception e) {
-				Platform.runLater(() -> onError.accept("Errore sincronizzazione inbox da server: " + e.getMessage()));
-				e.printStackTrace();
-
+				Platform.runLater(() -> notificaUtente.set(new Notification(Notification.NotificationType.ERROR,
+						"Errore sincronizzazione inbox da server: " + e.getMessage())));
 				return;
 			}
 
@@ -268,24 +283,177 @@ public class DataModel {
 
 			// 4. SALVATAGGIO NUOVA INBOX IN CACHE LOCALE (SE CI SONO STATE AGGIUNTE)
 			if(!newEmails.isEmpty()){
-				Gson gsonPretty = new GsonBuilder()
-						.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
-						.registerTypeHierarchyAdapter(BooleanProperty.class, new BooleanPropertyAdapter())
-						.setPrettyPrinting()
-						.create();
-				try (FileWriter writer = new FileWriter(localFile);) {
+				try{
 					List<Email> emailsToWrite = new ArrayList<>(localEmails);
 					emailsToWrite.addAll(newEmails);
 					emailsToWrite.sort((e1, e2) -> e2.getDataSpedizione().compareTo(e1.getDataSpedizione()));
-					gsonPretty.toJson(emailsToWrite, writer);
+					updateInboxFile(localFile,  emailsToWrite);
 				} catch (Exception e) {
-					Platform.runLater(() -> onError.accept("Errore scrittura inbox in cache locale: " + e.getMessage()));
-					e.printStackTrace();
+					Platform.runLater(() -> notificaUtente.set(new Notification(Notification.NotificationType.ERROR,
+							"Errore scrittura inbox in cache locale: " + e.getMessage())));
 				}
 			}
+		});
+	}
 
-			System.out.println(inboxProperty().get());   // Debug
+	/**
+	 * Richiede la cancellazione di un'email dalla casella postale lato server per poi eliminarla anche localmente.
+	 *
+	 * @param toDelete Email da eliminare.
+	 */
+	public void deleteEmail(Email toDelete){
+		long idToDelete = toDelete.getId();
+		String user = currentUser.get().split("@")[0];  // Estraggo user dall'indirizzo email
+		Gson gson = new Gson();
+		ServerRequest req = new ServerRequest(currentUser.get(), "DLT_EML", idToDelete);
 
+		isLoading.set(true);    // Inizio caricamento
+		requestExec.execute(() -> {
+			try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
+			     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+			     Scanner in = new Scanner(new InputStreamReader(socket.getInputStream()))) {
+
+				out.println(gson.toJson(req, ServerRequest.class));     // Invio richiesta
+				ServerResponse res = gson.fromJson(in.nextLine(), ServerResponse.class);
+
+				if(res!=null && res.isSuccess()){
+					boolean deleted = (Boolean) res.getData();
+					if(deleted){    // Se lato server la cancellazione è avvenuta con successo, posso procedere lato client
+						File localFile = new File("data/" + user + ".json");
+						Platform.runLater(() -> {
+							inbox.get().remove(toDelete);
+							updateInboxFile(localFile, List.copyOf(inbox.get()));
+						});
+					}
+
+					Platform.runLater(() -> notificaUtente.set(new Notification(Notification.NotificationType.SUCCESS, "Email eliminata.")));
+				}
+				else{
+					Platform.runLater(() -> notificaUtente.set(new Notification(Notification.NotificationType.ERROR, "Errore di comunicazione col server: l'email non è stata cancellata.")));
+				}
+			} catch (Exception e) {
+				Platform.runLater(() -> notificaUtente.set(new Notification(Notification.NotificationType.ERROR,"Errore cancellazione email: " + e.getMessage())));
+			}
+			finally {
+				Platform.runLater(() -> isLoading.set(false));  // Fine caricamento
+			}
+		});
+	}
+
+	/**
+	 * Sovrascrive la inbox sul file locale.
+	 *
+	 * @param localFile File locale della inbox.
+	 * @param emailsToWrite Lista delle email da salvare su file.
+	 */
+	private synchronized void updateInboxFile(File localFile, List<Email> emailsToWrite){
+		Gson gson = new GsonBuilder()
+				.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
+				.registerTypeHierarchyAdapter(BooleanProperty.class, new BooleanPropertyAdapter())
+				.setPrettyPrinting()
+				.create();
+
+		try (FileWriter writer = new FileWriter(localFile)) {
+			gson.toJson(emailsToWrite, writer);
+		}
+		catch(Exception e){
+			throw new RuntimeException(e.getMessage());
+		}
+	}
+
+	/**
+	 * Invia un'email al server perché venga distribuita ai destinatari.
+	 *
+	 * @param toSend Email da inviare.
+	 * @param onDestInesistenti Funzione di callback in caso di destinatari inesistenti.
+	 * @param onSuccess Funzione di callback in caso di operazione riuscita.
+	 */
+	public void sendEmail(Email toSend,  Consumer<List<String>> onDestInesistenti, Consumer<NullType> onSuccess){
+		Gson gson = new GsonBuilder()
+				.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())   // Adapter superflui perché i campi saranno null
+				.registerTypeHierarchyAdapter(BooleanProperty.class, new BooleanPropertyAdapter())  // Adapter superflui perché i campi saranno null
+				.create();
+
+		// Mi assicuro che ci siano dei destinatari
+		if(toSend.getDestinatari().isEmpty()){
+			notificaUtente.set(new Notification(Notification.NotificationType.INFO, "Campo destinatari vuoto."));
+			return;
+		}
+
+		isLoading.set(true);    // Inizio caricamento
+		requestExec.execute(() -> {
+			List<String> destinatariInesistenti = new ArrayList<>();
+
+			// Prima verifico che i destinatari esistano
+			try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
+			     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+			     Scanner in = new Scanner(new InputStreamReader(socket.getInputStream()))) {
+
+				ServerRequest req = new ServerRequest(currentUser.get(), "VER_EML", toSend.getDestinatari());
+				out.println(gson.toJson(req, ServerRequest.class));
+				ServerResponse res = gson.fromJson(in.nextLine(), ServerResponse.class);
+
+				if (res != null && res.isSuccess()) {
+					Type tipoLista = new TypeToken<List<String>>() {}.getType();
+					destinatariInesistenti.addAll(gson.fromJson(gson.toJson(res.getData()), tipoLista));
+
+				} else {
+					Platform.runLater(() -> {
+						notificaUtente.set(new Notification(Notification.NotificationType.ERROR,
+								"Operazione non riuscita: " + (res != null ? res.getMessage() : "errore del server sconosciuto")));
+						isLoading.set(false);   // Fine caricamento
+					});
+					return;
+				}
+			} catch (Exception e) {
+				Platform.runLater(() -> {
+					notificaUtente.set(new Notification(Notification.NotificationType.ERROR, "Errore invio email: " + e.getMessage()));
+					isLoading.set(false);   // Fine caricamento
+				});
+				return;
+			}
+
+			// Se alcuni destinatari non esistono, lo segnalo all'utente
+			if(!destinatariInesistenti.isEmpty()){
+				Platform.runLater(() -> {
+					isLoading.set(false);
+					onDestInesistenti.accept(destinatariInesistenti);
+				});  // Fine caricamento (se la transazione è terminata)
+				return;
+			}
+
+			// Se i destinatari esistono, invio la richiesta di send
+			try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
+			     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+			     Scanner in = new Scanner(new InputStreamReader(socket.getInputStream()))) {
+
+				ServerRequest req = new ServerRequest(currentUser.get(), "SND_EML", toSend);
+				out.println(gson.toJson(req, ServerRequest.class));
+				ServerResponse res = gson.fromJson(in.nextLine(), ServerResponse.class);
+
+				if(res!=null && res.isSuccess()){
+					boolean sent = (Boolean) res.getData();
+					if(sent){
+						Platform.runLater(() -> {
+							notificaUtente.set(new Notification(Notification.NotificationType.SUCCESS, "Email inviata."));
+							onSuccess.accept(null);
+						});
+					}
+					else{
+						Platform.runLater(() -> notificaUtente.set(new Notification(Notification.NotificationType.ERROR, "Errore invio email: " + res.getMessage())));
+					}
+				}
+				else {
+					Platform.runLater(() -> notificaUtente.set(new Notification(Notification.NotificationType.ERROR,
+							"Operazione non riuscita: " + (res != null ? res.getMessage() : "errore del server sconosciuto"))));
+				}
+			}
+			catch (Exception e) {
+				Platform.runLater(() -> notificaUtente.set(new Notification(Notification.NotificationType.ERROR,"Errore invio email: " + e.getMessage())));
+			}
+			finally {
+				Platform.runLater(() -> isLoading.set(false));  // Fine caricamento
+			}
 		});
 	}
 
@@ -306,12 +474,12 @@ public class DataModel {
 
 	public SimpleObjectProperty<Email> selectedEmailProperty(){return selectedEmail;}
 
-	public String getGenericError() {
-		return genericError.get();
+	public Notification getNotificaUtente() {
+		return notificaUtente.get();
 	}
 
-	public SimpleStringProperty genericErrorProperty() {
-		return genericError;
+	public SimpleObjectProperty<Notification> notificaUtenteProperty() {
+		return notificaUtente;
 	}
 
 	public boolean isIsConnectionOnline() {
@@ -320,5 +488,13 @@ public class DataModel {
 
 	public BooleanProperty isConnectionOnlineProperty() {
 		return isConnectionOnline;
+	}
+
+	public boolean isIsLoading() {
+		return isLoading.get();
+	}
+
+	public BooleanProperty isLoadingProperty() {
+		return isLoading;
 	}
 }

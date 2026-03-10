@@ -1,9 +1,6 @@
-/* Nascondo l'header delle tabelle */
-.table-view .column-header-background{
-    -fx-max-height: 0;
-    -fx-min-height: 0;
-    -fx-pref-height: 0;
-    -fx-padding: 0;
+/* Glass pane per i caricamenti */
+#loadingOverlay{
+    -fx-background-color: rgba(0, 0, 0, 0.2);
 }
 
 /* Stili lista di visualizzazione email */
@@ -20,9 +17,6 @@
     -fx-text-fill: white;
 }
 
-#colDelete{
-    -fx-alignment: center;
-}
 
 /* Button elimina email */
 .btnDelete{
@@ -66,3 +60,27 @@
 /*    -fx-background-insets: 0;*/
 /*}*/
 
+
+/* Stile notifiche utente */
+.lblNotification{
+    -fx-max-width: Infinity;    /* Uguale a "width: 100%" */
+    -fx-wrap-text: true;
+}
+
+.lblError{ /* Per messaggi di errore */
+    -fx-background-color: #d32f2f; -fx-text-fill: white;
+    -fx-padding: 10px 20px; -fx-background-radius: 5px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 3);
+}
+
+.lblSuccess{   /* Per notifiche informative */
+    -fx-background-color: #58d32f; -fx-text-fill: white;
+    -fx-padding: 10px 20px; -fx-background-radius: 5px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 3);
+}
+
+.lblInfo{
+    -fx-background-color: #326fe1; -fx-text-fill: white;
+    -fx-padding: 10px 20px; -fx-background-radius: 5px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 3);
+}
