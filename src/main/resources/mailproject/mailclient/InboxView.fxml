@@ -100,12 +100,12 @@
                <children>
                   <SplitPane dividerPositions="0.3903803131991051" layoutX="14.0" layoutY="14.0" prefHeight="196.0" prefWidth="599.2" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                     <items>
-                      <AnchorPane maxWidth="500.0" minHeight="0.0" minWidth="100.0" prefHeight="160.0" prefWidth="100.0">
+                      <AnchorPane minHeight="0.0" minWidth="280.0" prefHeight="160.0" prefWidth="470.0">
                            <children>
                               <ListView fx:id="lstEmails" editable="true" prefHeight="458.4" prefWidth="348.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
                            </children>
                         </AnchorPane>
-                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="487.0" prefWidth="514.0">
+                      <AnchorPane minHeight="0.0" minWidth="600.0" prefHeight="487.0" prefWidth="514.0">
                            <children>
                               <VBox fx:id="boxSelectedEmail" layoutX="116.0" layoutY="41.0" prefHeight="200.0" prefWidth="100.0" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                  <children>
@@ -163,13 +163,16 @@
                                           <Insets bottom="3.0" top="3.0" />
                                        </padding>
                                     </HBox>
-                                    <TextArea fx:id="txtAreaContent" editable="false" prefHeight="200.0" prefWidth="200.0" styleClass="txtArea" wrapText="true">
+                                    <TextArea fx:id="txtAreaContent" editable="false" prefWidth="200.0" styleClass="txtArea" wrapText="true" VBox.vgrow="ALWAYS">
                                        <font>
                                           <Font size="14.0" />
                                        </font>
                                        <padding>
                                           <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                                        </padding>
+                                       <VBox.margin>
+                                          <Insets bottom="5.0" top="5.0" />
+                                       </VBox.margin>
                                     </TextArea>
                                     <HBox alignment="CENTER_LEFT" prefHeight="30.0" prefWidth="433.0" spacing="15.0">
                                        <children>
@@ -210,7 +213,7 @@
                                           <Insets left="10.0" />
                                        </padding>
                                        <VBox.margin>
-                                          <Insets top="5.0" />
+                                          <Insets bottom="10.0" top="5.0" />
                                        </VBox.margin>
                                     </HBox>
                                  </children>
@@ -274,10 +277,13 @@
                                           <Insets left="5.0" right="5.0" />
                                        </padding>
                                     </HBox>
-                                    <TextArea fx:id="txtAreaWriteContent" prefHeight="200.0" prefWidth="200.0" styleClass="txtArea" wrapText="true">
+                                    <TextArea fx:id="txtAreaWriteContent" prefHeight="200.0" prefWidth="200.0" styleClass="txtArea" wrapText="true" VBox.vgrow="ALWAYS">
                                        <padding>
                                           <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                                        </padding>
+                                       <VBox.margin>
+                                          <Insets bottom="5.0" top="5.0" />
+                                       </VBox.margin>
                                     </TextArea>
                                     <HBox alignment="TOP_RIGHT" spacing="10.0">
                                        <children>
@@ -287,6 +293,9 @@
                                        <padding>
                                           <Insets top="5.0" />
                                        </padding>
+                                       <VBox.margin>
+                                          <Insets bottom="10.0" />
+                                       </VBox.margin>
                                     </HBox>
                                  </children>
                                  <padding>
@@ -301,7 +310,7 @@
             </AnchorPane>
          </children>
       </VBox>
-      <VBox fx:id="notificationsOverlay" alignment="BOTTOM_RIGHT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" pickOnBounds="false" prefHeight="250.0" prefWidth="300.0" spacing="6.0" StackPane.alignment="BOTTOM_RIGHT">
+      <VBox fx:id="notificationsOverlay" alignment="BOTTOM_RIGHT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" pickOnBounds="false" prefHeight="250.0" prefWidth="350.0" spacing="6.0" StackPane.alignment="BOTTOM_RIGHT">
          <padding>
             <Insets bottom="5.0" right="5.0" />
          </padding></VBox>

@@ -125,17 +125,19 @@ public class DataModel {
 				}
 			}
 			catch(Exception e){
-				Platform.runLater(() -> onError.accept("Comunicazione col server fallita"));
+				Platform.runLater(() -> onError.accept(e.getMessage()));
 			}
 		});
 	}
 
 	/**
-	 * Esegue il logout dalla mailbox.
+	 * Esegue il logout dalla mailbox e il reset di tutte le variabili di stato ad essa associate.
 	 */
 	public void invalidateSession(){
 		currentUser.set(null);
 		isConnectionOnline.set(false);
+		justLogged = false;
+		inbox.get().clear();
 	}
 
 	/**
@@ -241,10 +243,9 @@ public class DataModel {
 				// Ricezione risposta
 				ServerResponse res = gson.fromJson(in.nextLine(), ServerResponse.class);
 
-
 				// Aggiungo le email arrivate alle nuove email
 				if(res!=null && res.isSuccess()){
-					Platform.runLater(() -> isConnectionOnline.set(true));  // Reset error msg
+					Platform.runLater(() -> isConnectionOnline.set(true));
 
 					newEmails.addAll(gson.fromJson(gson.toJson(res.getData()), tipoLista));   // Parsing doppio per non perdere dati
 					for (Email email : newEmails) {
@@ -345,8 +346,9 @@ public class DataModel {
 	 *
 	 * @param localFile File locale della inbox.
 	 * @param emailsToWrite Lista delle email da salvare su file.
+	 * @throws RuntimeException Se la scrittura su file json non va a buon fine.
 	 */
-	private synchronized void updateInboxFile(File localFile, List<Email> emailsToWrite){
+	private synchronized void updateInboxFile(File localFile, List<Email> emailsToWrite) throws RuntimeException{
 		Gson gson = new GsonBuilder()
 				.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
 				.registerTypeHierarchyAdapter(BooleanProperty.class, new BooleanPropertyAdapter())
@@ -358,6 +360,30 @@ public class DataModel {
 		}
 		catch(Exception e){
 			throw new RuntimeException(e.getMessage());
+		}
+	}
+
+	/**
+	 * Marca l'email come letta e ne gestisce il salvataggio su file.
+	 *
+	 * @param email Email da marcare come letta.
+	 */
+	public void markEmailAsRead(Email email){
+		// Procedo solo se l'email non era già stata letta (per evitare riscritture inutili)
+		if (email != null && !email.isLetta()) {
+			email.setLetta(true);
+
+			String user = currentUser.get().split("@")[0];
+			File localFile = new File("data/" + user + ".json");
+
+			// Operazione di I/O asincrona
+			requestExec.execute(() -> {
+				try {
+					updateInboxFile(localFile, List.copyOf(inbox.get()));
+				} catch (Exception e) {
+					Platform.runLater(() -> notificaUtente.set(new Notification(Notification.NotificationType.ERROR, "Errore salvataggio stato lettura in cache.")));
+				}
+			});
 		}
 	}
 
@@ -417,6 +443,7 @@ public class DataModel {
 			if(!destinatariInesistenti.isEmpty()){
 				Platform.runLater(() -> {
 					isLoading.set(false);
+					notificaUtente.set(new Notification(Notification.NotificationType.ERROR, "Email non inviata."));
 					onDestInesistenti.accept(destinatariInesistenti);
 				});  // Fine caricamento (se la transazione è terminata)
 				return;

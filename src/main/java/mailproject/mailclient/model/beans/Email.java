@@ -68,18 +68,24 @@ public class Email {
 	}
 
 	public String getDataSpedizioneAsString(){
-		return dataSpedizione.getDayOfMonth() + "/" +
-				dataSpedizione.getMonthValue() + "/" +
-				dataSpedizione.getYear() + " - " +
-				dataSpedizione.getHour() + ":" +
-				dataSpedizione.getMinute();
+		if(dataSpedizione != null){
+			int day = dataSpedizione.getDayOfMonth();
+			int month = dataSpedizione.getMonthValue();
+			int hour = dataSpedizione.getHour();
+			int minute = dataSpedizione.getMinute();
+
+			return  (day < 10 ? "0" : "") + day + "/" +
+					(month < 10 ? "0" : "") + month + "/" +
+					dataSpedizione.getYear() + " – " +
+					(hour < 10 ? "0" : "") + hour + ":" +
+					(minute < 10 ? "0" : "") + minute;
+		}
+
+		return "null";
 	}
 
 	public String getAnteprima(){
-		String anteprima = oggetto + " - " + contenuto;
-
-		if (anteprima.length() > 50)
-			anteprima = anteprima.substring(0,50) + "...";
+		String anteprima = oggetto + " – " + contenuto;
 
 		return anteprima.replaceAll("\\R", " ");    // Elimino tutti gli "a capo" (\n, \r, \r\n)
 	}

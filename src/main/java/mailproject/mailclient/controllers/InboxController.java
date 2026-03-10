@@ -4,9 +4,13 @@ import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.shape.Circle;
@@ -82,8 +86,8 @@ public class InboxController extends MyController{
 		txtWriteTo.setText(model.getSelectedEmail().getMittente());
 		txtWriteSubject.setText("Re: " + model.getSelectedEmail().getOggetto());
 		txtAreaWriteContent.setText("\n\n" +
-				"In data " + replyEmail.getDataSpedizioneAsString() + " " + replyEmail.getMittente() + " ha scritto:\n\t" +
-				replyEmail.getContenuto());
+				"In data " + replyEmail.getDataSpedizioneAsString() + " " + replyEmail.getMittente() + " ha scritto:\n│\t" +
+				replyEmail.getContenuto().replaceAll("\n", "\n│\t"));
 
 		// Cambio visualizzazione
 		lstEmails.getSelectionModel().clearSelection();
@@ -104,8 +108,8 @@ public class InboxController extends MyController{
 		txtWriteTo.setText(destinatariStr);
 		txtWriteSubject.setText("Re: " + replyEmail.getOggetto());
 		txtAreaWriteContent.setText("\n\n" +
-				"In data " + replyEmail.getDataSpedizioneAsString() + " " + replyEmail.getMittente() + " ha scritto:\n\t" +
-				replyEmail.getContenuto());
+				"In data " + replyEmail.getDataSpedizioneAsString() + " " + replyEmail.getMittente() + " ha scritto:\n│\t" +
+				replyEmail.getContenuto().replaceAll("\n", "\n│\t"));
 
 		// Cambio visualizzazione
 		lstEmails.getSelectionModel().clearSelection();
@@ -155,11 +159,15 @@ public class InboxController extends MyController{
 				List.of(txtWriteTo.getText().split("\\s*,\\s*"))    // Split ignorando gli spazi
 			),
 			destinatariInesistenti -> {
-				new Alert(Alert.AlertType.ERROR,
+				Alert alert = new Alert(Alert.AlertType.ERROR,
 					"I seguenti indirizzi inseriti non esistono: " +
 						String.join(", ", destinatariInesistenti) +
-						".\nSi prega di verificare e riprovare."
-				).showAndWait();
+						"\nSi prega di verificare e riprovare."
+				);
+				alert.setTitle("Errore invio email");
+				alert.setHeaderText("Destinatari inesistenti");
+				alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);   // Per adattare l'altezza alla lunghezza del messaggio
+				alert.showAndWait();
 			},
 			_ -> {
 				resetCampiWrite();
@@ -267,13 +275,21 @@ public class InboxController extends MyController{
 			private final Label anteprimaEmail = new Label();
 			private final Label dataInvio = new Label();
 			private final Button deleteButton = new Button();
-			private final HBox contentContainer = new HBox(anteprimaEmail, dataInvio, deleteButton);
+			private final HBox contentContainer = new HBox(15, anteprimaEmail, dataInvio, deleteButton);
 
 			{
 				deleteButton.getStyleClass().add("btnDelete");
 				deleteButton.setGraphic(new FontIcon("far-trash-alt"));
-				// Azione: rimuove l'email corrente
-				deleteButton.setOnAction(_ -> deleteEmail(getItem()));
+				deleteButton.setOnAction(_ -> deleteEmail(getItem()));      // Azione: rimuove l'email corrente
+
+				// Settings spaziature e layout
+				contentContainer.setAlignment(Pos.CENTER_LEFT);
+				HBox.setHgrow(anteprimaEmail, Priority.ALWAYS);     // Anteprima elastica
+				anteprimaEmail.setMinWidth(100);
+				anteprimaEmail.setPrefWidth(0);
+				anteprimaEmail.setMaxWidth(Double.MAX_VALUE);
+				dataInvio.setMinWidth(Region.USE_PREF_SIZE);
+				deleteButton.setMinWidth(Region.USE_PREF_SIZE);
 			}
 
 			// La view viene aggiornata con le modifiche del model.inbox
@@ -281,12 +297,22 @@ public class InboxController extends MyController{
 			protected void updateItem(Email item, boolean empty){
 				super.updateItem(item, empty);
 
+				// Rimozione vincoli precedenti per il riciclo della cella
+				anteprimaEmail.styleProperty().unbind();
+
 				if(empty || item == null){
 					setGraphic(null);
 				}
 				else{
 					anteprimaEmail.setText(item.getAnteprima());
 					dataInvio.setText(item.getDataSpedizioneAsString());
+
+					// Binding per il grassetto in caso non sia stata ancora letta
+					anteprimaEmail.styleProperty().bind(Bindings.when(item.lettaProperty())
+							.then("-fx-font-weight: normal;")
+							.otherwise("-fx-font-weight: bold;")
+					);
+
 					setGraphic(contentContainer);
 				}
 			}
@@ -297,7 +323,7 @@ public class InboxController extends MyController{
 		model.selectedEmailProperty().addListener((_, _, newEmail) -> {
 			if (newEmail != null) {
 				boxWriteEmail.setVisible(false);
-				newEmail.setLetta(true);
+				model.markEmailAsRead(newEmail);    // Marca l'email come letta
 			}
 		});
 
