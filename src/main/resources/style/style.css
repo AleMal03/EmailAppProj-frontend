@@ -1,16 +1,36 @@
+/* Background app */
+.appBackground{
+    -fx-background-color: #f4f5f7;
+}
+
+/* Stili di testo */
+.mainText{
+    -fx-text-fill: #333333;
+}
+
+.actionText{
+    -fx-text-fill: #E2133D;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
 /* Glass pane per i caricamenti */
 #loadingOverlay{
     -fx-background-color: rgba(0, 0, 0, 0.2);
 }
 
 /* Stili lista di visualizzazione email */
+.list-view .list-cell{
+    -fx-background-color: white;
+}
+
 .list-view .list-cell:hover{
-    -fx-background-color: rgba(60, 165, 179, 0.81);
+    -fx-background-color: rgba(227, 57, 91, 0.8);
     -fx-cursor: hand;
 }
 
 .list-view .list-cell:selected{
-    -fx-background-color: rgba(34, 129, 255, 0.93);
+    -fx-background-color: rgba(226, 19, 61, 0.9);
 }
 
 .list-view .list-cell:selected .label{
@@ -21,6 +41,9 @@
 /* Button elimina email */
 .btnDelete{
     -fx-cursor: hand;
+    -fx-background-radius: 15;
+    -fx-background-insets: 0;
+    -fx-background-color: #f4f5f7;
 }
 
 .btnDelete .ikonli-font-icon{
@@ -43,25 +66,69 @@
 }
 
 .btn:hover{
-    -fx-background-color: rgb(181, 181, 181);
+    -fx-background-color: rgba(253, 192, 204, 0.85);
+    -fx-cursor: hand;
 }
 
-/* Stili view di Write email */
-.txtWrite{
+.btnAction{
+    -fx-padding: 5 15 5 15;
+}
+
+/* ---- Text inputs ---- */
+.text-field{
     -fx-background-radius: 15;
-    -fx-background-color: #d5d5d5;
+    -fx-background-color: #dddddd;
     -fx-border-color: transparent;
 }
 
+.text-area{
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+    -fx-background-color: transparent;
+}
+
+.text-area .content{
+    -fx-background-insets: 0;
+}
+
+.text-area .scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.text-area .scroll-bar .track {
+    -fx-background-insets: 0;
+}
+
+/* Il cursore (Thumb) per la TextArea */
+.text-area .scroll-bar .thumb {
+    -fx-background-color: rgba(226, 19, 61, 0.9);
+    -fx-background-radius: 5em;
+    -fx-background-insets: 2;
+}
+
+.text-area .scroll-bar .thumb:hover {
+    -fx-background-color: rgba(227, 57, 91, 0.8);
+}
+
+/* Nasconde le freccette */
+.text-area .scroll-bar .increment-button,
+.text-area .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-opacity: 0;
+}
+
 /* Rimuove lo spessore e il colore del divider in tutti gli SplitPane */
-/*.split-pane *.split-pane-divider {*/
-/*    -fx-padding: 0;*/
-/*    -fx-background-color: transparent;*/
-/*    -fx-background-insets: 0;*/
-/*}*/
+.split-pane *.split-pane-divider {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
 
-
-/* Stile notifiche utente */
+/* ---- Stile notifiche utente ---- */
 .lblNotification{
     -fx-max-width: Infinity;    /* Uguale a "width: 100%" */
     -fx-wrap-text: true;

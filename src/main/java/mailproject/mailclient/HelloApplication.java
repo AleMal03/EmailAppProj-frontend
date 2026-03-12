@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import mailproject.mailclient.controllers.InboxController;
 import mailproject.mailclient.controllers.LoginController;
@@ -36,10 +37,13 @@ public class HelloApplication extends Application {
 		loginController.setInboxView(inboxView);
 		inboxController.setLoginView(loginView);
 
+		// Prendo l'icona dell'app
+		Image appImg = new Image(HelloApplication.class.getResourceAsStream("/images/logoMail.png"));
 
 		Scene scene = new Scene(loginView, 1100, 500);
 		scene.getStylesheets().add(HelloApplication.class.getResource("/style/style.css").toExternalForm());
-		stage.setTitle("Login");
+		stage.setTitle("MailClient - Login");
+		stage.getIcons().add(appImg);
 		stage.setScene(scene);
 		stage.setMinWidth(1100);
 		stage.show();

@@ -4,7 +4,6 @@ import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
@@ -152,6 +151,21 @@ public class InboxController extends MyController{
 			return;
 		}
 
+		// Verifico lato client che le email siano ben formate prima di inviare la richiesta al server
+		List<String> indirizziErrati = model.areEmailValid(List.of(txtWriteTo.getText().split("\\s*,\\s*")));
+		if(!indirizziErrati.isEmpty()){
+			Alert alert = new Alert(Alert.AlertType.ERROR,
+					"I seguenti indirizzi inseriti non sono ben formati: " +
+							String.join(", ", indirizziErrati) +
+							"\nSi prega di verificare e riprovare."
+			);
+			alert.setTitle("Errore indirizzi email");
+			alert.setHeaderText("Indirizzi errati");
+			alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);   // Per adattare l'altezza alla lunghezza del messaggio
+			alert.showAndWait();
+			return;
+		}
+
 		model.sendEmail(new Email(
 				txtWriteSubject.getText(),
 				txtAreaWriteContent.getText(),
@@ -269,7 +283,7 @@ public class InboxController extends MyController{
 
 		/* Bindings per visualizzare la lista di emails */
 		lstEmails.itemsProperty().bind(model.inboxProperty());
-		lstEmails.setCellFactory(l -> new ListCell<>(){
+		lstEmails.setCellFactory(_ -> new ListCell<>(){
 
 			// Contenuto riga della lista
 			private final Label anteprimaEmail = new Label();
@@ -278,7 +292,7 @@ public class InboxController extends MyController{
 			private final HBox contentContainer = new HBox(15, anteprimaEmail, dataInvio, deleteButton);
 
 			{
-				deleteButton.getStyleClass().add("btnDelete");
+				deleteButton.getStyleClass().addAll("btnDelete");
 				deleteButton.setGraphic(new FontIcon("far-trash-alt"));
 				deleteButton.setOnAction(_ -> deleteEmail(getItem()));      // Azione: rimuove l'email corrente
 

@@ -155,6 +155,18 @@ public class DataModel {
 		return true;
 	}
 
+	public List<String> areEmailValid(List<String> emails){
+		List<String> invalidEmails = new ArrayList<>();
+
+		for(String address : emails){
+			if(!isEmailValid(address)){
+				invalidEmails.add(address);
+			}
+		}
+
+		return invalidEmails;
+	}
+
 	/**
 	 * Verifica esistenza dell'indirizzo email comunicando col server.
 	 *
@@ -279,6 +291,11 @@ public class DataModel {
 
 					// Eseguo ordinamento
 					inbox.get().sort((e1, e2) -> e2.getDataSpedizione().compareTo(e1.getDataSpedizione()));
+
+					if(!newEmails.isEmpty()){
+						notificaUtente.set(new Notification(Notification.NotificationType.INFO,
+								"Hai dei nuovi messaggi in entrata!"));
+					}
 				});
 			}
 
@@ -493,32 +510,16 @@ public class DataModel {
 
 	public SimpleListProperty<Email> inboxProperty(){return inbox;}
 
-	public void setSelectedEmail(Email selectedEmail){
-		this.selectedEmail.set(selectedEmail);
-	}
-
 	public Email getSelectedEmail(){return selectedEmail.get();}
 
 	public SimpleObjectProperty<Email> selectedEmailProperty(){return selectedEmail;}
-
-	public Notification getNotificaUtente() {
-		return notificaUtente.get();
-	}
 
 	public SimpleObjectProperty<Notification> notificaUtenteProperty() {
 		return notificaUtente;
 	}
 
-	public boolean isIsConnectionOnline() {
-		return isConnectionOnline.get();
-	}
-
 	public BooleanProperty isConnectionOnlineProperty() {
 		return isConnectionOnline;
-	}
-
-	public boolean isIsLoading() {
-		return isLoading.get();
 	}
 
 	public BooleanProperty isLoadingProperty() {

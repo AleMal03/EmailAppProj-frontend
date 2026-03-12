@@ -30,7 +30,7 @@ public class LoginController extends MyController{
 		model.createSession(txtEmailAddr.getText(),
 			(success)->{
 				if(success){
-					cambiaSchermata(inboxView, "Mail inbox", event);
+					cambiaSchermata(inboxView, "MailClient - Inbox", event);
 					txtEmailAddr.setText("");
 				}
 				else{
