@@ -98,24 +98,24 @@
     -fx-background: transparent;
 }
 
-.text-area .scroll-bar .track {
+.scroll-bar .track {
     -fx-background-insets: 0;
 }
 
 /* Il cursore (Thumb) per la TextArea */
-.text-area .scroll-bar .thumb {
+.scroll-bar .thumb {
     -fx-background-color: rgba(226, 19, 61, 0.9);
     -fx-background-radius: 5em;
     -fx-background-insets: 2;
 }
 
-.text-area .scroll-bar .thumb:hover {
+.scroll-bar .thumb:hover {
     -fx-background-color: rgba(227, 57, 91, 0.8);
 }
 
 /* Nasconde le freccette */
-.text-area .scroll-bar .increment-button,
-.text-area .scroll-bar .decrement-button {
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
     -fx-background-color: transparent;
     -fx-padding: 0;
     -fx-opacity: 0;

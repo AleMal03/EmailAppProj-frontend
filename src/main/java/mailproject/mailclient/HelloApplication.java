@@ -46,6 +46,7 @@ public class HelloApplication extends Application {
 		stage.getIcons().add(appImg);
 		stage.setScene(scene);
 		stage.setMinWidth(1100);
+		stage.setMinHeight(500);
 		stage.show();
 	}
 }

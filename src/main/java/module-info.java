@@ -7,6 +7,8 @@ module mailproject.mailclient {
 	requires com.google.gson;
 	requires org.controlsfx.controls;
 	requires java.compiler;
+	requires java.desktop;
+	requires javafx.media;
 
 	opens mailproject.mailclient.controllers to javafx.fxml;
 	opens mailproject.mailclient.model to javafx.base;

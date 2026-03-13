@@ -14,6 +14,7 @@ import mailproject.mailclient.model.servercommunication.ServerRequest;
 import mailproject.mailclient.model.servercommunication.ServerResponse;
 
 import javax.lang.model.type.NullType;
+import javafx.scene.media.AudioClip;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.net.ConnectException;
@@ -295,6 +296,15 @@ public class DataModel {
 					if(!newEmails.isEmpty()){
 						notificaUtente.set(new Notification(Notification.NotificationType.INFO,
 								"Hai dei nuovi messaggi in entrata!"));
+						// Notifica audio
+						try{
+							String audioPath = getClass().getResource("/audio/incomingEmail.wav").toExternalForm();
+							AudioClip notificaAudio = new AudioClip(audioPath);
+							notificaAudio.play();
+						}
+						catch(Exception e){
+							System.err.println("Impossibile riprodurre l'audio: " + e.getMessage());
+						}
 					}
 				});
 			}

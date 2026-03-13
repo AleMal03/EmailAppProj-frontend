@@ -89,7 +89,7 @@
                         </Button>
                         <Button fx:id="btnLogout" accessibleText="Esci" contentDisplay="CENTER" maxWidth="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#onLogoutBtnClick" prefWidth="30.0" styleClass="btn" HBox.hgrow="NEVER">
                            <graphic>
-                              <FontIcon iconColor="#c70000" iconLiteral="fas-sign-out-alt" iconSize="18" textAlignment="CENTER" />
+                              <FontIcon iconColor="#860000" iconLiteral="fas-sign-out-alt" iconSize="18" textAlignment="CENTER" />
                            </graphic>
                            <cursor>
                               <Cursor fx:constant="HAND" />
