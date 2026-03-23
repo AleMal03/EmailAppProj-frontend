@@ -20,9 +20,7 @@ import java.lang.reflect.Type;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
@@ -156,8 +154,8 @@ public class DataModel {
 		return true;
 	}
 
-	public List<String> areEmailValid(List<String> emails){
-		List<String> invalidEmails = new ArrayList<>();
+	public Set<String> areEmailsValid(Set<String> emails){
+		Set<String> invalidEmails = new HashSet<>();
 
 		for(String address : emails){
 			if(!isEmailValid(address)){

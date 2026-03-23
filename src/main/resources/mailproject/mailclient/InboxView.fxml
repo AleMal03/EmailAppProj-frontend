@@ -30,7 +30,7 @@
                <children>
                   <HBox alignment="CENTER_LEFT" maxHeight="40.0" minHeight="40.0" prefHeight="40.0" spacing="6.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                      <children>
-                        <Label maxWidth="110.0" minWidth="110.0" prefWidth="110.0" text="Casella di posta di" HBox.hgrow="NEVER">
+                        <Label maxWidth="110.0" minWidth="110.0" prefWidth="110.0" styleClass="mainText" text="Casella di posta di" HBox.hgrow="NEVER">
                            <font>
                               <Font size="13.0" />
                            </font>
@@ -111,9 +111,18 @@
                               <ListView fx:id="lstEmails" editable="true" prefHeight="458.4" prefWidth="348.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
                            </children>
                         </AnchorPane>
-                      <AnchorPane minHeight="0.0" minWidth="600.0" prefHeight="487.0" prefWidth="514.0">
+                        <StackPane>
                            <children>
-                              <VBox fx:id="boxSelectedEmail" layoutX="116.0" layoutY="41.0" prefHeight="200.0" prefWidth="100.0" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                              <VBox alignment="CENTER">
+                                 <children>
+                                    <Label styleClass="mainText" text="Visualizzazione e scrittura email">
+                                       <font>
+                                          <Font size="14.0" />
+                                       </font>
+                                    </Label>
+                                 </children>
+                              </VBox>
+                              <VBox fx:id="boxSelectedEmail" prefHeight="200.0" prefWidth="100.0" visible="false">
                                  <children>
                                     <HBox>
                                        <children>
@@ -227,7 +236,7 @@
                                     <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
                                  </padding>
                               </VBox>
-                              <VBox fx:id="boxWriteEmail" alignment="TOP_CENTER" prefHeight="200.0" prefWidth="100.0" spacing="6.0" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                              <VBox fx:id="boxWriteEmail" alignment="TOP_CENTER" prefHeight="200.0" prefWidth="100.0" spacing="6.0" visible="false">
                                  <children>
                                     <HBox alignment="CENTER_LEFT" spacing="8.0">
                                        <children>
@@ -298,13 +307,15 @@
                                                 <String fx:value="btn" />
                                                 <String fx:value="btnAction" />
                                                 <String fx:value="actionText" />
-                                             </styleClass></Button>
+                                             </styleClass>
+                                          </Button>
                                           <Button fx:id="btnWriteSubmit" alignment="CENTER" mnemonicParsing="false" onAction="#onWriteSubmit" text="Invia">
                                              <styleClass>
                                                 <String fx:value="btn" />
                                                 <String fx:value="btnAction" />
                                                 <String fx:value="actionText" />
-                                             </styleClass></Button>
+                                             </styleClass>
+                                          </Button>
                                        </children>
                                        <padding>
                                           <Insets top="5.0" />
@@ -318,18 +329,19 @@
                                     <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
                                  </padding>
                               </VBox>
+                              <VBox fx:id="notificationsOverlay" alignment="BOTTOM_RIGHT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" pickOnBounds="false" prefHeight="250.0" prefWidth="350.0" spacing="6.0" StackPane.alignment="BOTTOM_RIGHT">
+                                 <padding>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </padding>
+                              </VBox>
                            </children>
-                        </AnchorPane>
+                        </StackPane>
                     </items>
                   </SplitPane>
                </children>
             </AnchorPane>
          </children>
       </VBox>
-      <VBox fx:id="notificationsOverlay" alignment="BOTTOM_RIGHT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" pickOnBounds="false" prefHeight="250.0" prefWidth="300.0" spacing="6.0" StackPane.alignment="BOTTOM_RIGHT">
-         <padding>
-            <Insets bottom="5.0" right="5.0" />
-         </padding></VBox>
       <VBox fx:id="loadingOverlay" alignment="CENTER" visible="false" StackPane.alignment="CENTER">
          <children>
             <ProgressIndicator prefHeight="297.0" prefWidth="427.0" />
