@@ -19,10 +19,7 @@ import mailproject.mailclient.model.beans.Email;
 import mailproject.mailclient.model.beans.Notification;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class InboxController extends MyController{
 	private Parent loginView;
@@ -154,8 +151,9 @@ public class InboxController extends MyController{
 		}
 
 		// Verifico lato client che le email siano ben formate ed elimino le duplicate prima di inviare la richiesta al server
-		List<String> emailsList = List.of(txtWriteTo.getText().split("\\s*,\\s*"));
-		Set<String> indirizziErrati = model.areEmailsValid(new HashSet<>(emailsList));
+		Set<String> destSet = new HashSet<>(List.of(txtWriteTo.getText().strip().split("\\s*,\\s*")));
+		destSet.remove("");    // Rimuove eventuali indirizzi vuoti inseriti per errore dall'utente
+		Set<String> indirizziErrati = model.areEmailsValid(destSet);
 		if(!indirizziErrati.isEmpty()){
 			Alert alert = new Alert(Alert.AlertType.ERROR,
 					"I seguenti indirizzi inseriti non sono ben formati: " +
@@ -173,7 +171,7 @@ public class InboxController extends MyController{
 				txtWriteSubject.getText(),
 				txtAreaWriteContent.getText(),
 				txtWriteFrom.getText(),
-				new HashSet<>(List.of(txtWriteTo.getText().split("\\s*,\\s*")))    // Split ignorando gli spazi
+				destSet     // Destinatari estratti precedentemente
 			),
 			destinatariInesistenti -> {
 				Alert alert = new Alert(Alert.AlertType.ERROR,
